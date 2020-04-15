@@ -47,6 +47,45 @@ prompt()
 }
 
 
+display()
+{
+	echo "Entered into display"
+}
+
+run_module()
+{
+	file="./module/load_data.mod"
+	while read line
+	do
+		IFS='~'; typeset -a inp_array=($line); unset IFS;
+		case ${inp_array[0]} in
+			"PROMPT")
+				prompt "${inp_array[1]}" "${inp_array[2]}" "${inp_array[3]}"
+				;;
+			"CODE")
+				IFS=','; typeset -a arg_array=(${inp_array[2]}); unset IFS;
+				args=""
+				i=0
+				while [ $i -lt ${#arg_array[@]} ];do
+					temp=${arg_array[$i]}
+                			args="$args${RESPONSES[$temp]},"
+                			let i=i+1
+        			done
+			
+				exec_module_code "./lib/${inp_array[1]}" "$args"
+				;;
+			"SOURCE")
+				. ./lib/${inp_array[1]}
+				;;
+			"KUBECTL")
+				echo $line			
+				;;
+			* )
+				echo "Unknown command"
+				;;
+		esac
+	done < $file
+}
 
 #----------------------------------------------------------------------------------#
 #	MAIN PROGRAM
@@ -54,41 +93,4 @@ prompt()
 typeset -A RESPONSES
 export RESPONSES
 
-file="./module/test.mod"
-while read line
-do
-	IFS='~'; typeset -a inp_array=($line); unset IFS;
-	case ${inp_array[0]} in
-		"PROMPT")
-			prompt "${inp_array[1]}" "${inp_array[2]}" "${inp_array[3]}"
-			;;
-		"CODE")
-			IFS=','; typeset -a arg_array=(${inp_array[2]}); unset IFS;
-			args=""
-			i=0
-			while [ $i -lt ${#arg_array[@]} ];do
-				temp=${arg_array[$i]}
-                		args="$args${RESPONSES[$temp]},"
-                		let i=i+1
-        		done
-			
-			exec_module_code "./lib/${inp_array[1]}" "$args"
-			;;
-		* )
-			echo "Unknown command"
-			;;
-	esac
-done < $file
-
-echo ${RESPONSES[TO]}
-echo ${RESPONSES[FROM]}
-
-#RESPONSES[TO]=Wael
-#RESPONSES[FROM]="Craig Kovar"
-
-#script="./lib/test.ksh"
-#exec_module_code $script "${RESPONSES["TO"]},${RESPONSES["FROM"]}"
-
-#RESPONSES[TO]=Art
-
-#exec_module_code $script "${RESPONSES["TO"]},${RESPONSES["FROM"]}"
+run_module
