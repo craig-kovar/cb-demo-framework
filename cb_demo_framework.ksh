@@ -54,7 +54,8 @@ prompt()
 typeset -A RESPONSES
 export RESPONSES
 
-file="./module/test.mod"
+#file="./module/test.mod"
+file="./module/load_data.mod"
 while read line
 do
 	IFS='~'; typeset -a inp_array=($line); unset IFS;
