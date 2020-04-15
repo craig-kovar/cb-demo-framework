@@ -54,7 +54,7 @@ display()
 
 run_module()
 {
-	file="./module/load_data.mod"
+	file="./module/test.mod"
 	while read line
 	do
 		IFS='~'; typeset -a inp_array=($line); unset IFS;
