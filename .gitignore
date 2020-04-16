@@ -1,2 +1,3 @@
 test.ksh
 *.log
+unit_test/*

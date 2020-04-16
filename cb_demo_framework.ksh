@@ -72,8 +72,10 @@ prompt()
 	read input < /dev/tty
 	if [ -z "$input" ];then
 		RESPONSES[$2]=$3
+		debug "[PROMPT] Setting $2 to $3"
 	else
 		RESPONSES[$2]="$input"
+		debug "[PROMPT] Setting $2 to $input"
 	fi
 	echo ""
 }
@@ -159,10 +161,19 @@ run_module()
 				. ./lib/${inp_array[1]}
 				;;
 			"KUBECTL")
-				echo $line			
+				kcommand=`replace_var "${inp_array[1]}"`
+				kcommand="kubectl $kcommand"
+				debug "[KUBECTL] Running command $kcommand"
+				eval $kcommand
+				;;
+			"KUBEEXEC")
+				kcommand=`replace_var "${inp_array[1]}"`
+				kcommand="kubectl exec -it $kcommand"
+				debug "[KUBEEXEC] Running command $kcommand"
+				eval $kcommand
 				;;
 			* )
-				echo "Unknown command"
+				echo "Unknown command [${inp_array[0]}]"
 				;;
 		esac
 	done < $file
@@ -267,5 +278,8 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 		read pause
 		continue
 	fi
+	echo ""
+	echo "hit any key to continue..."
+	read pause
 done
 
