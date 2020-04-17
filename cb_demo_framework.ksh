@@ -27,6 +27,18 @@ debug() {
 	fi
 }
 
+pause() {
+	echo ""
+	echo "Hit any key to continue..."
+	read pause
+}
+
+get_var_val() {
+	temp=`replace_var "${1}"`
+	final=`eval echo "$temp"`
+	echo $final
+}
+
 usage() {
 	echo ""
 	echo "Couchbase Demo Framework Usage"
@@ -77,9 +89,15 @@ prompt()
 		RESPONSES[$2]="$input"
 		debug "[PROMPT] Setting $2 to $input"
 	fi
-	echo ""
 }
 
+message()
+{
+	orig=$1
+	message=`IFS=''; replace_var "$orig"; unset IFS`
+	debug "[MESSAGE] - Orig: $orig Fmt: $message"
+	eval echo "$message"
+}
 
 replace_var()
 {
@@ -100,19 +118,38 @@ load_modules()
 	done
 }
 
+load_demos()
+{
+	debug "Loading demos"
+	for file in ./module/*.demo
+	do
+		temp=`echo $(basename $file)`
+		DEMOS+=($temp)
+
+		topline=`head -1 $file`
+		debug "$topline"
+		if [[ ! -z $topline && ${topline:0:2} == "#@" ]];then
+			DEMODESC+=("${topline:2}")
+		fi
+	done
+}
+
+
 display() {
 	startnum=$1
 	offset=$2
+	type=$3
 
 	clear	
 	echo "==========================================================================================="
 	echo "				Couchbase Demo Framework					 "
 	echo "												 "
 	echo "				Total Modules: ${#MODULES[@]}					 "
+	echo "				Total Demos  : ${#DEMOS[@]}					 "
 	echo "												 "
 	echo "			< Page Back = 'b'          'p' = Page Forward >				 "
 	echo "												 "
-	echo "					q - quit						 "
+	echo "			d - Switch to demo display	q - quit				 "
 	echo "==========================================================================================="
 
 	j=0	
@@ -121,12 +158,74 @@ display() {
 	debug "Displaying modules $startnum to (<) $max"
 	echo ""
 	echo ""
-	while [[ $i -lt $max && $i -lt ${#MODULES[@]} ]];do
-		echo "[$j] - ${MODULES[$i]}"
-		let j=j+1
-		let i=i+1
-	done
+	if [ $type == "MOD" ];then
+		while [[ $i -lt $max && $i -lt ${#MODULES[@]} ]];do
+			echo "[$j] - ${MODULES[$i]}"
+			let j=j+1
+			let i=i+1
+		done
+	elif [ $type == "DEMO" ];then
+		while [[ $i -lt $max && $i -lt ${#DEMOS[@]} ]];do
+			echo "[$j] - ${DEMOS[$i]}	: ${DEMODESC[$i]}"
+			let j=j+1
+			let i=i+1
+		done
+	fi
 	echo ""
+}
+
+get_leading_space()
+{
+        mystring=$1
+        i=0
+        while (( i <= ${#mystring} ))
+        do
+                char=${mystring:$i:1}
+                if [[ ! -z $char && $char == " " ]];then
+                        (( i += 1 ))
+                else
+                        break
+                fi
+        done
+
+        echo $i
+}
+
+parse_template()
+{
+	template=`get_var_val $1`
+	name=$(echo "$template" | cut -f 1 -d '.')
+	workdir=`get_var_val $2`
+	suffix=`get_var_val $3`
+	varname=$4
+
+	if [ ! -z $varname ];then
+		RESPONSES[$varname]="${workdir}/${name}.${suffix}"
+	fi
+
+	if [ -f ${workdir}/${name}.${suffix} ];then
+		debug "[TEMPLATE] - File detected (${workdir}/${name}.${suffix}) removing..."
+		rm ${workdir}/${name}.${suffix}
+	fi
+	
+	IFS=''	
+	while read fline
+	do
+		spacecnt=`get_leading_space $fline`
+		valline=`get_var_val $fline`
+		printline=""
+		i=0
+		while [ $i -lt $spacecnt ];
+		do
+  			printline="$printline "
+			let i=i+1
+		done
+		printline="${printline}${valline}"
+
+		debug "[TEMPLATE] - Adding line: $printline"
+		echo "$printline" >> ${workdir}/${name}.${suffix}
+	done < ./templates/$template
+	unset IFS
 }
 
 run_module()
@@ -136,10 +235,19 @@ run_module()
 	while read line
 	do
 		debug "[RUN_MODULE] Line : $line"
+		CHECKLINE=`echo $line | awk '{$1=$1};1'`
+		FIRSTCHAR=${CHECKLINE:0:1}
+		if [[ ! -z $FIRSTCHAR && $FIRSTCHAR == "#" ]];then
+			continue
+		fi
+
 		IFS='~'; typeset -a inp_array=($line); unset IFS;
 		case ${inp_array[0]} in
 			"PROMPT")
 				prompt "${inp_array[1]}" "${inp_array[2]}" "${inp_array[3]}"
+				;;
+			"MESSAGE")
+				message "${inp_array[1]}"
 				;;
 			"CODE")
 				IFS=','; typeset -a arg_array=(${inp_array[2]}); unset IFS;
@@ -168,9 +276,19 @@ run_module()
 				;;
 			"KUBEEXEC")
 				kcommand=`replace_var "${inp_array[1]}"`
-				kcommand="kubectl exec -it $kcommand"
+				kcommand="kubectl exec $kcommand"
 				debug "[KUBEEXEC] Running command $kcommand"
 				eval $kcommand
+				;;
+			"MODULE")
+				run_module "${inp_array[1]}"
+				;;
+			"EXEC")
+				command=`replace_var "${inp_array[1]}"`
+				debug "[EXEC] Running command $command"
+				;;
+			"TEMPLATE")
+				parse_template ${inp_array[1]} ${inp_array[2]} ${inp_array[3]} ${inp_array[4]}
 				;;
 			* )
 				echo "Unknown command [${inp_array[0]}]"
@@ -185,6 +303,9 @@ run_module()
 script=$0
 typeset -A RESPONSES
 typeset -a MODULES
+typeset -a DEMOS
+typeset -a DEMODESC
+TYPE="MOD"
 export RESPONSES
 START=0
 PAGESIZE=20
@@ -235,11 +356,13 @@ info "[MAIN] -------------------------------------------------------------------
 info "[MAIN] 		Starting cb_demo_framework				  "
 info "[MAIN] ---------------------------------------------------------------------"
 load_modules
+load_demos
 MODCNT=${#MODULES[@]}
+DEMOCNT=${#DEMOS[@]}
 
 #MAIN LOOP
 while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
-	display $START $PAGESIZE
+	display $START $PAGESIZE $TYPE
 	echo ""
 	echo "Enter your selection: "
 	read input
@@ -248,14 +371,29 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 	typeset -i NUM=$SELECTION
 	let MODNUM=START+NUM
 	let MODMAX=MODCNT-START
+	let DEMOMAX=DEMOCNT-START
 
 	if [[ -z $SELECTION || $SELECTION == "q" ]];then
 		break;
+	elif [ $SELECTION == "d" ];then
+		if [ $TYPE == "MOD" ];then
+			TYPE="DEMO"
+		else
+			TYPE="MOD"
+		fi
+		continue
 	elif [ $SELECTION == "p" ];then
 		let START=START+PAGESIZE
-		if [ $START -ge ${#MODULES[@]} ];then
-			debug "Paged past max size, setting back to 0"
-			START=0
+		if [ $TYPE == "MOD" ];then
+			if [ $START -ge ${#MODULES[@]} ];then
+				debug "Paged past max size, setting back to 0"
+				START=0
+			fi
+		elif [ $TYPE == "DEMO" ];then
+			if [ $START -ge ${#DEMOS[@]} ];then
+				debug "Paged past max size, setting back to 0"
+				START=0
+			fi
 		fi
 		continue
 	elif [ $SELECTION == "b" ];then
@@ -265,21 +403,36 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 			START=0
 		fi
 		continue
-	elif [[ $NUM -ge 0 && $NUM -lt $MODMAX && $NUM -lt $PAGESIZE ]];then
-		if [[ $NUM -eq 0 && $SELECTION != "0" ]];then
-			info "Unknown selection [$SELECTION], hit any key to continue..."
-			read pause
+	elif [[ $NUM -ge 0 ]];then
+		if [[ $TYPE == "MOD" && $NUM -lt $MODMAX && $NUM -lt $PAGESIZE ]];then
+			if [[ $NUM -eq 0 && $SELECTION != "0" ]];then
+				info "Unknown selection [$SELECTION], hit any key to continue..."
+				read pause
+				continue
+			fi
+			run_module ${MODULES[$MODNUM]}
+			pause
 			continue
 		fi
 		
-		run_module ${MODULES[$MODNUM]}
+		if [[ $TYPE == "DEMO" && $NUM -lt $DEMOMAX && $NUM -lt $PAGESIZE ]];then
+			if [[ $NUM -eq 0 && $SELECTION != "0" ]];then
+				info "Unknown selection [$SELECTION], hit any key to continue..."
+				read pause
+				continue
+			fi
+			run_module ${DEMOS[$MODNUM]}
+			pause
+			continue
+		fi
+
+		info "Unknown selection [$SELECTION], hit any key to continue..."
+		read pause
+		continue
 	else
 		info "Unknown selection [$SELECTION], hit any key to continue..."
 		read pause
 		continue
 	fi
-	echo ""
-	echo "hit any key to continue..."
-	read pause
 done
 
