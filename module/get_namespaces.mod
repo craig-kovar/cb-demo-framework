@@ -1,0 +1,1 @@
+KUBECTL~get ns
