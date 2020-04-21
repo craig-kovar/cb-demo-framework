@@ -1,0 +1,2 @@
+#Directory Name~git repo~description
+waeldemo~https://github.com/WaelEmam/Couchbase.git~Wael CB Operator Demo

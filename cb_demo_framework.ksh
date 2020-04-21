@@ -45,13 +45,14 @@ usage() {
 	echo "Version: $VERSION"
 	echo ""
 	echo "$1 [-n|--nolog] [-d|--debug] [-l|-logfile <filename>] [-h|--help]"
-	echo "		[-p|--pagesize]"
+	echo "		[-p|--pagesize] [-g|--git-refresh]"
 	echo ""
-	echo "	-n | --nolog	=	Disables logging. Logging is enabled by default"
-	echo "	-d | --debug	=	Enables debug logging.  Disabled by default"
-	echo "	-l | --logfile	=	Specify the log file to use,  defaults to cb_demo.log"
-	echo "	-p | --pagesize	=	Specify the pagesize to display. This defaults to 20"
-	echo "	-h | --help	=	Display usage information"
+	echo "	-n | --nolog		=	Disables logging. Logging is enabled by default"
+	echo "	-d | --debug		=	Enables debug logging.  Disabled by default"
+	echo "	-l | --logfile		=	Specify the log file to use,  defaults to cb_demo.log"
+	echo "	-p | --pagesize		=	Specify the pagesize to display. This defaults to 20"
+	echo "	-h | --help		=	Display usage information"
+	echo "	-g | --git-refresh	=	Refresh the recorded git repositories"
 	echo ""
 }
 
@@ -350,6 +351,12 @@ while [ "$1" != "" ]; do
 			shift
 			PAGESIZE=$1
 			debug "Pagesize set to $PAGESIZE"
+			;;
+		-g | --git-refresh)
+			info "Refreshing the git repositories..."
+			ksh lib/git_helper.ksh
+			info "hit any key to continue..."
+			pause
 			;;
         	*)
             		echo "ERROR: unknown parameter \"$ARG\""
