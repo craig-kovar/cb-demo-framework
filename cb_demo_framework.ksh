@@ -45,13 +45,14 @@ usage() {
 	echo "Version: $VERSION"
 	echo ""
 	echo "$1 [-n|--nolog] [-d|--debug] [-l|-logfile <filename>] [-h|--help]"
-	echo "		[-p|--pagesize]"
+	echo "		[-p|--pagesize] [-g|--git-refresh]"
 	echo ""
-	echo "	-n | --nolog	=	Disables logging. Logging is enabled by default"
-	echo "	-d | --debug	=	Enables debug logging.  Disabled by default"
-	echo "	-l | --logfile	=	Specify the log file to use,  defaults to cb_demo.log"
-	echo "	-p | --pagesize	=	Specify the pagesize to display. This defaults to 20"
-	echo "	-h | --help	=	Display usage information"
+	echo "	-n | --nolog		=	Disables logging. Logging is enabled by default"
+	echo "	-d | --debug		=	Enables debug logging.  Disabled by default"
+	echo "	-l | --logfile		=	Specify the log file to use,  defaults to cb_demo.log"
+	echo "	-p | --pagesize		=	Specify the pagesize to display. This defaults to 20"
+	echo "	-h | --help		=	Display usage information"
+	echo "	-g | --git-refresh	=	Refresh the recorded git repositories"
 	echo ""
 }
 
@@ -60,6 +61,7 @@ exec_module_code()
 	#Get the name of the command
 	debug "[EXEC CODE] Running script ${1}"
 	script=${1}
+	retvar=${3}
 
 	#Split the arguments
 	IFS=','; typeset -a arg_array=($2); unset IFS;
@@ -74,7 +76,15 @@ exec_module_code()
 	command="$script $args"
 
 	debug "[EXEC CODE] Evaluating command : $command"
-	eval $command
+	
+	if [ ! -z $retvar ];then
+		retval=`eval $command < /dev/tty`
+		debug "[EXEC CODE] Setting return argument $retvar to $retval"
+		RESPONSES[$retvar]=$retval
+	else
+		eval $command < /dev/tty
+	fi
+
 }
 
 prompt()
@@ -262,7 +272,7 @@ run_module()
         			done
 				debug "[CODE] Final args: $args"
 			
-				exec_module_code "./lib/${inp_array[1]}" "$args"
+				exec_module_code "./lib/${inp_array[1]}" "$args" "${inp_array[3]}"
 				;;
 			"SOURCE")
 				debug "[SOURCE] Sourcing code ${inp_array[1]}"
@@ -278,7 +288,7 @@ run_module()
 				kcommand=`replace_var "${inp_array[1]}"`
 				kcommand="kubectl exec $kcommand"
 				debug "[KUBEEXEC] Running command $kcommand"
-				eval $kcommand
+				eval $kcommand < /dev/tty
 				;;
 			"MODULE")
 				run_module "${inp_array[1]}"
@@ -341,6 +351,12 @@ while [ "$1" != "" ]; do
 			shift
 			PAGESIZE=$1
 			debug "Pagesize set to $PAGESIZE"
+			;;
+		-g | --git-refresh)
+			info "Refreshing the git repositories..."
+			ksh lib/git_helper.ksh
+			info "hit any key to continue..."
+			pause
 			;;
         	*)
             		echo "ERROR: unknown parameter \"$ARG\""

@@ -1,0 +1,2 @@
+#@ This is an example calling external bash script (Wael's Demo)
+CODE~wrapper_bash.ksh~./git_repos/waeldemo/cboperator_1_click/on-prem/create_env.sh

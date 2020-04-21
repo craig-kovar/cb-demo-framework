@@ -17,10 +17,12 @@ SCRIPTDIR=$(dirname "$script")
 SCRIPTNAME=$(basename "$script")
 
 cd $SCRIPTDIR
-
+ls
 # Execute the script
-if [ -f ${script} ];then
-	python $script $args
+if [ -f ${SCRIPTNAME} ];then
+	bash $SCRIPTNAME $args
+else
+	echo "Script not found"
 fi
 
 # Return to original directory
