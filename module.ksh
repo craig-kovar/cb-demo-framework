@@ -6,7 +6,7 @@ echo "Enter module name"
 read mod
 
 ## check if the file already exists
-if test -f $mod.mod; then
+if test -f module/$mod.mod; then
     echo "${mod}.mod exists, Do want to replace it?? Y/N"
     read ans
     case $ans in
@@ -62,7 +62,7 @@ len=`echo ${#array[@]}`
 
 for i in "${!array[@]}"
 do
-	printf '%s\n' "PROMPT~${array[$i]}~VAR$((i+1))" >> ${mod}.mod
+	printf '%s\n' "PROMPT~${array[$i]}~VAR$((i+1))" >> module/${mod}.mod
 
 done
 
@@ -76,7 +76,7 @@ case $ans in
            Y|y)
                    echo "what is the script name"
 		   read script
-		   echo "CODE~${script}~{{NS}},{{bucket}},{{pod}}" >> ${mod}.mod
+		   echo "CODE~${script}~{{NS}},{{bucket}},{{pod}}" >> module/${mod}.mod
 
                    ;;
            N|n)
