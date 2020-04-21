@@ -60,6 +60,7 @@ exec_module_code()
 	#Get the name of the command
 	debug "[EXEC CODE] Running script ${1}"
 	script=${1}
+	retvar=${3}
 
 	#Split the arguments
 	IFS=','; typeset -a arg_array=($2); unset IFS;
@@ -74,7 +75,15 @@ exec_module_code()
 	command="$script $args"
 
 	debug "[EXEC CODE] Evaluating command : $command"
-	eval $command
+	
+	if [ ! -z $retvar ];then
+		retval=`eval $command < /dev/tty`
+		debug "[EXEC CODE] Setting return argument $retvar to $retval"
+		RESPONSES[$retvar]=$retval
+	else
+		eval $command < /dev/tty
+	fi
+
 }
 
 prompt()
@@ -262,7 +271,7 @@ run_module()
         			done
 				debug "[CODE] Final args: $args"
 			
-				exec_module_code "./lib/${inp_array[1]}" "$args"
+				exec_module_code "./lib/${inp_array[1]}" "$args" "${inp_array[3]}"
 				;;
 			"SOURCE")
 				debug "[SOURCE] Sourcing code ${inp_array[1]}"
@@ -278,7 +287,7 @@ run_module()
 				kcommand=`replace_var "${inp_array[1]}"`
 				kcommand="kubectl exec $kcommand"
 				debug "[KUBEEXEC] Running command $kcommand"
-				eval $kcommand
+				eval $kcommand < /dev/tty
 				;;
 			"MODULE")
 				run_module "${inp_array[1]}"
