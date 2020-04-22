@@ -1,0 +1,3 @@
+#@ This is an example calling the NoSQL Summit Script
+PROMPT~Enter any arguments for NoSQL Summit Script~ARGS~
+CODE~wrapper_python.ksh~./git_repos/nosqlsummit/eks_script.py,{{ARGS}}

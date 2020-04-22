@@ -1,2 +1,3 @@
 #Directory Name~git repo~description
 waeldemo~https://github.com/WaelEmam/Couchbase.git~Wael CB Operator Demo
+nosqlsummit~https://github.com/couchbaselabs/couchbasesummit.git~Couchbase NoSQL Summit Script

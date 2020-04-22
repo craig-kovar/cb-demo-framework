@@ -19,8 +19,8 @@ SCRIPTNAME=$(basename "$script")
 cd $SCRIPTDIR
 
 # Execute the script
-if [ -f ${script} ];then
-	python $script $args
+if [ -f ${SCRIPTNAME} ];then
+	python $SCRIPTNAME $args
 fi
 
 # Return to original directory

@@ -45,7 +45,7 @@ usage() {
 	echo "Version: $VERSION"
 	echo ""
 	echo "$1 [-n|--nolog] [-d|--debug] [-l|-logfile <filename>] [-h|--help]"
-	echo "		[-p|--pagesize] [-g|--git-refresh]"
+	echo "		[-p|--pagesize <size>] [-g|--git-refresh] [-l <git|mod|demo>]"
 	echo ""
 	echo "	-n | --nolog		=	Disables logging. Logging is enabled by default"
 	echo "	-d | --debug		=	Enables debug logging.  Disabled by default"
@@ -53,6 +53,7 @@ usage() {
 	echo "	-p | --pagesize		=	Specify the pagesize to display. This defaults to 20"
 	echo "	-h | --help		=	Display usage information"
 	echo "	-g | --git-refresh	=	Refresh the recorded git repositories"
+	echo "	-l git|mod|demo		=	List the specified resource"
 	echo ""
 }
 
@@ -258,6 +259,9 @@ run_module()
 				;;
 			"MESSAGE")
 				message "${inp_array[1]}"
+				;;
+			"SET")
+				RESPONSES[${inp_array[1]}]=${inp_array[2]}
 				;;
 			"CODE")
 				IFS=','; typeset -a arg_array=(${inp_array[2]}); unset IFS;
