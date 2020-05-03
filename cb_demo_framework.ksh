@@ -45,7 +45,7 @@ usage() {
 	echo "Version: $VERSION"
 	echo ""
 	echo "$1 [-n|--nolog] [-d|--debug] [-l|-logfile <filename>] [-h|--help]"
-	echo "		[-p|--pagesize <size>] [-g|--git-refresh] [-l <git|mod|demo>]"
+	echo "		[-p|--pagesize <size>] [-g|--git-refresh] [--list <git|mod|demo>]"
 	echo ""
 	echo "	-n | --nolog		=	Disables logging. Logging is enabled by default"
 	echo "	-d | --debug		=	Enables debug logging.  Disabled by default"
@@ -53,7 +53,7 @@ usage() {
 	echo "	-p | --pagesize		=	Specify the pagesize to display. This defaults to 20"
 	echo "	-h | --help		=	Display usage information"
 	echo "	-g | --git-refresh	=	Refresh the recorded git repositories"
-	echo "	-l git|mod|demo		=	List the specified resource"
+	echo "	--list git|mod|demo	=	List the specified resource"
 	echo ""
 }
 
@@ -158,8 +158,8 @@ display() {
 	echo "				Total Modules: ${#MODULES[@]}					 "
 	echo "				Total Demos  : ${#DEMOS[@]}					 "
 	echo "												 "
-	echo "			< Page Back = 'b'          'p' = Page Forward >				 "
-	echo "												 "
+	echo "			< Page Back = 'b'              'p' = Page Forward >			 "
+	echo "		        s - Set variable	        v - Display Variables			 "
 	echo "			d - Switch to demo display	q - quit				 "
 	echo "==========================================================================================="
 
@@ -239,6 +239,28 @@ parse_template()
 	unset IFS
 }
 
+set_var()
+{
+	debug "[SETVAR] Setting variable..."
+	echo "Enter variable name to set: "
+	read varname
+	echo "Enter value for $varname: "
+	read varvalue
+	debug "[SETVAR] Setting $varname to $varvalue"
+	RESPONSES[$varname]=$varvalue
+}
+
+dump_var()
+{
+	debug "[DUMPVAR] Dumping all known variables"
+	for i in "${!RESPONSES[@]}"
+	do
+  		echo "$i : ${RESPONSES[$i]}"
+	done	
+	echo "Hit any key to continue..."
+	read pause
+}
+
 run_module()
 {
 	file="./module/${1}"
@@ -300,6 +322,7 @@ run_module()
 			"EXEC")
 				command=`replace_var "${inp_array[1]}"`
 				debug "[EXEC] Running command $command"
+				eval $command < /dev/tty
 				;;
 			"TEMPLATE")
 				parse_template ${inp_array[1]} ${inp_array[2]} ${inp_array[3]} ${inp_array[4]}
@@ -362,6 +385,11 @@ while [ "$1" != "" ]; do
 			info "hit any key to continue..."
 			pause
 			;;
+		--list)
+			echo "Listing ... "
+			pause
+			exit 0
+			;;
         	*)
             		echo "ERROR: unknown parameter \"$ARG\""
             		usage $script
@@ -423,6 +451,10 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 			START=0
 		fi
 		continue
+	elif [ $SELECTION == "s" ];then
+		set_var
+	elif [ $SELECTION == "v" ];then
+		dump_var
 	elif [[ $NUM -ge 0 ]];then
 		if [[ $TYPE == "MOD" && $NUM -lt $MODMAX && $NUM -lt $PAGESIZE ]];then
 			if [[ $NUM -eq 0 && $SELECTION != "0" ]];then
