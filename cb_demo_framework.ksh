@@ -12,6 +12,25 @@
 VERSION=0.0.1
 
 #----------------------------------------------------------------------------------#
+#	SCRIPT VARIABLES
+#----------------------------------------------------------------------------------#
+script=$0
+typeset -A RESPONSES
+typeset -a MODULES
+typeset -a DEMOS
+typeset -a DEMODESC
+TYPE="MOD"
+export RESPONSES
+START=0
+PAGESIZE=20
+SELECTION="0"
+INFO=1
+DEBUG=0
+LOGFILE=./cb_demo.log
+writemode=""
+recordfile=""
+
+#----------------------------------------------------------------------------------#
 #	FUNCTIONS
 #----------------------------------------------------------------------------------#
 
@@ -158,6 +177,9 @@ display() {
 	echo "				Total Modules: ${#MODULES[@]}					 "
 	echo "				Total Demos  : ${#DEMOS[@]}					 "
 	echo "												 "
+	echo "			w - Toggle recording mode		[$writemode]			 "
+	echo "			c - Set or change recording file	[$recordfile]			 "
+	echo "												 "
 	echo "			< Page Back = 'b'              'p' = Page Forward >			 "
 	echo "		        s - Set variable	        v - Display Variables			 "
 	echo "			d - Switch to demo display	q - quit				 "
@@ -261,6 +283,36 @@ dump_var()
 	read pause
 }
 
+new_record_file()
+{
+	echo "Enter name of file to record responses, i.e. test.demo: "
+	read recordfile
+	fileext=`echo ${recordfile##*.}`
+
+	while [[ $fileext != "demo" ]];do
+		echo "Enter name of file to record responses, i.e. test.demo: "
+		read recordfile
+		fileext=`echo ${recordfile##*.}`
+	done
+
+	if [ ! -f ./module/$recordfile ];then
+		echo "Enter a brief description for this recording: "
+		read desc
+
+		echo "#@ $desc" > ./module/$recordfile
+	else
+		echo "Override existing file [y/n]: "	
+		read override
+		if [ $override == "y" ];then
+			echo "Enter a brief description for this recording: "
+			read desc
+
+			echo "#@ $desc" > ./module/$recordfile
+		fi
+	fi
+
+}
+
 run_module()
 {
 	file="./module/${1}"
@@ -331,25 +383,19 @@ run_module()
 				echo "Unknown command [${inp_array[0]}]"
 				;;
 		esac
+	
+		#record values
+		if [ ! -z $writemode ];then
+			if [ ${inp_array[0]} == "PROMPT" ];then
+				echo "# $line" >> ./module/$recordfile
+				eval echo "SET~${inp_array[2]}~${RESPONSES[${inp_array[2]}]}" >> ./module/$recordfile
+			else
+				echo $line >> ./module/$recordfile
+			fi
+		fi
+		
 	done < $file
 }
-
-#----------------------------------------------------------------------------------#
-#	SCRIPT VARIABLES
-#----------------------------------------------------------------------------------#
-script=$0
-typeset -A RESPONSES
-typeset -a MODULES
-typeset -a DEMOS
-typeset -a DEMODESC
-TYPE="MOD"
-export RESPONSES
-START=0
-PAGESIZE=20
-SELECTION="0"
-INFO=1
-DEBUG=0
-LOGFILE=./cb_demo.log
 
 #----------------------------------------------------------------------------------#
 #	MAIN PROGRAM
@@ -455,6 +501,18 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 		set_var
 	elif [ $SELECTION == "v" ];then
 		dump_var
+	elif [ $SELECTION == "w" ];then
+		echo "Entered into switch mode"
+		if [ -z $writemode ];then
+			if [ -z $recordfile ];then
+				new_record_file
+			fi
+			writemode="recording"
+		else
+			writemode=""
+		fi
+	elif [ $SELECTION == "c" ];then
+		new_record_file
 	elif [[ $NUM -ge 0 ]];then
 		if [[ $TYPE == "MOD" && $NUM -lt $MODMAX && $NUM -lt $PAGESIZE ]];then
 			if [[ $NUM -eq 0 && $SELECTION != "0" ]];then

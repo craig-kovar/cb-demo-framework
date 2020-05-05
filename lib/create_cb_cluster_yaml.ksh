@@ -26,22 +26,27 @@ read_inp()
 	fi 
 }
 
-echo "apiVersion: couchbase.com/v1" > $workdir/cb-cluster.yaml
-echo "kind: CouchbaseCluster" >> $workdir/cb-cluster.yaml
-echo "metadata:" >> $workdir/cb-cluster.yaml
-echo "  name: cb-example" >> $workdir/cb-cluster.yaml
-echo "spec:" >> $workdir/cb-cluster.yaml
-echo "  baseImage: couchbase/server" >> $workdir/cb-cluster.yaml
+echo "Enter name of configuration file to save [cb-cluster.yaml]: "
+conffile=`read_inp cb-cluster.yaml`
+
+echo "Enter the cluster name [cb-example]: "
+clustername=`read_inp cb-example`
+
+echo "apiVersion: couchbase.com/v2" > $workdir/${conffile}
+echo "kind: CouchbaseCluster" >> $workdir/${conffile}
+echo "metadata:" >> $workdir/${conffile}
+echo "  name: $clustername" >> $workdir/${conffile}
+echo "spec:" >> $workdir/${conffile}
 
 echo "Enter version [6.5.0]: "
 version=`read_inp 6.5.0`
 
-echo "  version: enterprise-${version}" >> $workdir/cb-cluster.yaml
-echo "  authSecret: cb-example-auth" >> $workdir/cb-cluster.yaml
-echo "  exposeAdminConsole: true" >> $workdir/cb-cluster.yaml
-echo "  adminConsoleServices:" >> $workdir/cb-cluster.yaml
-echo "    - data" >> $workdir/cb-cluster.yaml
-echo "  cluster:" >> $workdir/cb-cluster.yaml
+echo "  image: couchbase/server:${version}" >> $workdir/${conffile}
+echo "  paused: false" >> $workdir/${conffile}
+echo "  antiAffinity: false" >> $workdir/${conffile}
+echo "  softwareUpdateNotifications: false" >> $workdir/${conffile}
+echo "  cluster:" >> $workdir/${conffile}
+echo "    clusterName: $clustername" >> $workdir/${conffile}
 
 echo "Enter data service cluster quota in MB [256]: "
 dquota=`read_inp 256`
@@ -61,79 +66,198 @@ aquota=`read_inp 1024`
 echo "Enter index storage setting (plasma or memory_optimized)  [memory_optimized]: "
 istorage=`read_inp 1024`
 
-echo "    dataServiceMemoryQuota: $dquota" >> $workdir/cb-cluster.yaml
-echo "    indexServiceMemoryQuota: $iquota" >> $workdir/cb-cluster.yaml
-echo "    searchServiceMemoryQuota: $fquota" >> $workdir/cb-cluster.yaml
-echo "    eventingServiceMemoryQuota: $equota" >> $workdir/cb-cluster.yaml
-echo "    analyticsServiceMemoryQuota: $aquota" >> $workdir/cb-cluster.yaml
-echo "    indexStorageSetting: $istorage" >> $workdir/cb-cluster.yaml
-echo "    autoFailoverTimeout: 30" >> $workdir/cb-cluster.yaml
-echo "    autoFailoverMaxCount: 3" >> $workdir/cb-cluster.yaml
-echo "    autoFailoverOnDataDiskIssues: true" >> $workdir/cb-cluster.yaml
-echo "    autoFailoverOnDataDiskIssuesTimePeriod: 120" >> $workdir/cb-cluster.yaml
-echo "    autoFailoverServerGroup: false" >> $workdir/cb-cluster.yaml
-echo "  buckets:" >> $workdir/cb-cluster.yaml
+echo "    dataServiceMemoryQuota: ${dquota}Mi" >> $workdir/${conffile}
+echo "    indexServiceMemoryQuota: ${iquota}Mi" >> $workdir/${conffile}
+echo "    searchServiceMemoryQuota: ${fquota}Mi" >> $workdir/${conffile}
+echo "    eventingServiceMemoryQuota: ${equota}Mi" >> $workdir/${conffile}
+echo "    analyticsServiceMemoryQuota: ${aquota}Mi" >> $workdir/${conffile}
+echo "    indexStorageSetting: $istorage" >> $workdir/${conffile}
 
-addBucket="true"
+echo "Enter the autofailover timeout in seconds [30]: "
+timeout=`read_inp 30`
 
-while [ $addBucket = "true" ];do
+echo "    autoFailoverTimeout: ${timeout}s" >> $workdir/${conffile}
+echo "    autoFailoverMaxCount: 3" >> $workdir/${conffile}
+echo "    autoFailoverOnDataDiskIssues: true" >> $workdir/${conffile}
+echo "    autoFailoverOnDataDiskIssuesTimePeriod: 120s" >> $workdir/${conffile}
+echo "    autoFailoverServerGroup: false" >> $workdir/${conffile}
 
-	echo "Enter bucket name [default]: "
-	bucket=`read_inp default`
+echo "  security:" >> $workdir/${conffile}
+
+echo "Enter secret name [cb-example-auth]: "
+secret=`read_inp cb-example-auth`
+
+echo "    adminSecret: ${secret}" >> $workdir/${conffile}
+echo "    rbac:" >> $workdir/${conffile}
+
+echo "Do you want Operator to manage RBAC [y/n]: "
+rbac=`read_inp y`
+
+if [[ $rbac != "y" && $rbac != "n" ]];then
+	while [[ $rbac != "y" && $rbac != "n" ]];do
+		echo "Do you want Operator to manage RBAC [y/n]: "
+		rbac=`read_inp y`
+	done
+fi
+
+if [ $rbac = "y" ];then
+	echo "      managed: true" >> $workdir/${conffile}
+else
+	echo "      managed: false" >> $workdir/${conffile}
+fi
+
+echo "      selector:" >> $workdir/${conffile}
+echo "        matchLabels:" >> $workdir/${conffile}
+echo "          cluster: ${clustername}" >> $workdir/${conffile}
+
+echo "Do you want to expose services and/or enable TLS [y/n]: "
+tlssec=`read_inp y`
+
+if [[ $tlssec != "y" && $tlssec != "n" ]];then
+	echo "DEBUG - In the if loop"
+	while [[ $tlssec != "y" && $tlssec != "n" ]]; do
+		echo "DEBUG - in the while loop"
+		echo "Do you want to expose services and/or enable TLS [y/n]: "
+		tlssec=`read_inp y`
+	done
+fi
+
+if [ $tlssec = "y" ];then
+	echo "  networking:" >> $workdir/${conffile}
+	echo "    exposeAdminConsole: true" >> $workdir/${conffile}
+	echo "    adminConsoleServices:" >> $workdir/${conffile}
+	echo "    - data" >> $workdir/${conffile}
+
+	echo "Enter how to expose services [NodePort|LoadBalancer]: "
+	exposetype=`read_inp LoadBalancer`
 	
-	echo "    - name: $bucket" >> $workdir/cb-cluster.yaml
-	echo "      type: couchbase" >> $workdir/cb-cluster.yaml
+	echo "    adminConsoleServiceType: $exposetype" >> $workdir/${conffile}
+
+	typeset -A services
+	echo "Enter the services to expose [admin|xdcr|client] or q to stop: "
+	service=`read_inp admin`
+	while [ $service != "q" ];do
+		if [[ $service = "admin" || $service = "xdcr" || $service = "client" ]];then
+			services[$service]="true"
+		fi
+		echo "Enter the services to expose [admin|xdcr|client] or q to stop: "
+		service=`read_inp admin`
+	done
 	
-	echo "Enter the memory quota (mb) for bucket $bucket [128]: "
-	memquota=`read_inp 128`
-
-	echo "      memoryQuota: $memquota" >> $workdir/cb-cluster.yaml
-	
-	echo "Enter the number of replicas (0-3) [1]: "
-	replicas=`read_inp 1`
-
-	echo "      replicas: $replicas" >> $workdir/cb-cluster.yaml
-	echo "      ioPriority: low" >> $workdir/cb-cluster.yaml
-	echo "      evictionPolicy: valueOnly" >> $workdir/cb-cluster.yaml
-	echo "      conflictResolution: seqno" >> $workdir/cb-cluster.yaml
-	echo "      enableFlush: true" >> $workdir/cb-cluster.yaml
-	echo "      enableIndexReplica: false" >> $workdir/cb-cluster.yaml
-
-	echo "Add another bucket (y|n): "
-	read bktcontinue
-	while [[ $bktcontinue != "y" && $bktcontinue != "n" ]];do
-		echo "Add another bucket (y|n): "
-		read bktcontinue
+	for i in "${!services[@]}"
+	do
+		echo "    - ${i}" >> $workdir/${conffile}
 	done
 
-	if [ $bktcontinue = "n" ];then
-		addBucket="false"
+	echo "    exposedFeatureServiceType: ${exposetype}" >> $workdir/${conffile}
+	echo "    tls:" >> $workdir/${conffile}
+	echo "      static:" >> $workdir/${conffile}
+	echo "        serverSecret: couchbase-server-tls" >> $workdir/${conffile}
+	echo "        operatorSecret: couchbase-operator-tls" >>$workdir/${conffile}
+
+	if [ $exposetype = "LoadBalancer" ];then
+		echo "    dns:" >> $workdir/${conffile}
+		echo "Enter domain name to expose services under: "
+		dns=`read_inp se-couchbasedemos.com`
+		echo "      domain: $dns" >> $workdir/${conffile}
+	
+		echo "Enter any service annotation label: "
+		svcannotation=`read_inp`
+		echo "Enter service annotation value for label $svcannotation: "
+		svcvalue=`read_inp`
+		if [ ! -z $svcannotation ];then
+			echo "    serviceAnnotations:" >> $workdir/${conffile}
+			echo "      ${svcannotation}: ${svcvalue}" >> $workdir/${conffile}
+		fi
 	fi
-done
+fi
 
-echo "  servers:" >> $workdir/cb-cluster.yaml
-addServer="true"
-
-while [ $addServer = "true" ];do
-
-	echo "Enter server name [all]: "
-	server=`read_inp all`
-
-	echo "Enter number of pods [3]: "
+cbnode="y"
+echo "  servers:" >> $workdir/${conffile}
+while [ $cbnode = "y" ];do
+	echo "Enter node names [all_services]: "
+	node=`read_inp all_services`
+	echo "How many pods to create [3]: "
 	size=`read_inp 3`
-
-		
-
-	echo "Add another server (y|n): "
-	read srvcontinue
-	while [[ $srvcontinue != "y" && $srvcontinue != "n" ]];do
-		echo "Add another server (y|n): "
-		read srvcontinue
+	
+	typeset -A cbsvcs
+	echo "Enter the services [data|index|query|search|eventing|analytics] or q to stop: "
+	service=`read_inp data`
+	while [ $service != "q" ];do
+		if [[ $service = "data" || $service = "index" || $service = "query" \
+		   || $service = "search" || $service = "eventing" || $service = "analytics" ]];then
+			cbsvcs[$service]="true"
+		fi
+		echo "Enter the services [data|index|query|search|eventing|analytics] or q to stop: "
+		service=`read_inp data`
 	done
-
-	if [ $srvcontinue = "n" ];then
-		addServer="false"
+	
+	echo "Do you want to specify resource limits/requests [y/n]: "
+	read limit
+	if [ $limit = "y" ];then
+		echo "Enter cpu limit: "
+		read cpu_limit
+		echo "Enter memory limit, i.e. 2Gi: "
+		read mem_limit
+		echo "Enter cpu request: "
+		read cpu_request
+		echo "Enter memory request i.e. 2Gi: "
+		read mem_request
 	fi
 
+	echo "Specify a node selector [y/n]: "
+	read nodeselector
+	if [ $nodeselector = "y" ];then
+		echo "Enter node selector label: "
+		read ns_label
+		echo "Enter node selector value: "
+		read ns_value
+	fi
+
+	#Print Server info
+	echo "  - size: $size" >> $workdir/$conffile
+	echo "    name: $node" >> $workdir/$conffile
+	echo "    services:" >> $workdir/$conffile
+
+	for i in "${!cbsvcs[@]}"
+        do
+                echo "    - ${i}" >> $workdir/${conffile}
+        done
+	unset cbsvcs
+
+	if [ $limit = "y" ];then
+		echo "    resources:" >> $workdir/$conffile
+		echo "      limits:" >> $workdir/$conffile
+		echo "        cpu: ${cpu_limit}" >> $workdir/$conffile
+		echo "        memory: ${mem_limit}" >> $workdir/$conffile
+		echo "      requests:" >> $workdir/$conffile
+		echo "        cpu: ${cpu_request}" >> $workdir/$conffile
+		echo "        memory: ${mem_request}" >> $workdir/$conffile
+	fi
+
+	if [ $nodeselector = "y" ];then
+		echo "    pod:" >> $workdir/$conffile
+		echo "      spec:" >> $workdir/$conffile
+		echo "        nodeSelector:" >> $workdir/$conffile
+		echo "          ${ns_label}: ${ns_value}" >> $workdir/$conffile
+	fi
+	
+	echo "Configure another Couchbase Server [y/n]: "
+	read cbnode
 done
 
+echo "  buckets:" >> $workdir/$conffile
+echo "Should the operator manage buckets within this cluster [y/n]: "
+read bucketmng
+
+if [ $bucketmng = "y" ];then
+	echo "    managed: true" >> $workdir/$conffile
+else
+	echo "    managed: false" >> $workdir/$conffile
+fi
+
+echo "    selector:" >> $workdir/$conffile
+echo "      matchLabels:" >> $workdir/$conffile
+echo "        cluster: $clustername" >> $workdir/$conffile
+echo "  xdcr:" >> $workdir/$conffile
+echo "    managed: false" >> $workdir/$conffile
