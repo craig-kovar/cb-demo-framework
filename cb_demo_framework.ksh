@@ -230,7 +230,9 @@ get_leading_space()
 
 parse_template()
 {
+	debug "[TEMPLATE] Parsing template $1"
 	template=`get_var_val $1`
+	debug "[TEMPLATE] Retrieved template of $template"
 	name=$(echo "$template" | cut -f 1 -d '.')
 	workdir=`get_var_val $2`
 	suffix=`get_var_val $3`
@@ -244,12 +246,17 @@ parse_template()
 		debug "[TEMPLATE] - File detected (${workdir}/${name}.${suffix}) removing..."
 		rm ${workdir}/${name}.${suffix}
 	fi
-	
+
+	debug "[TEMPLATE] Processing file ./templates/$template"	
 	IFS=''	
 	while read fline
 	do
+		debug "[TEMPLATE] raw_line: $fline"
 		spacecnt=`get_leading_space $fline`
-		valline=`get_var_val $fline`
+		valline=$fline
+		if [[ `grep -c "{{"` -ge 1 || `grep -c "}}"` -ge 1 ]];then
+			valline=`get_var_val $fline`
+		fi
 		printline=""
 		i=0
 		while [ $i -lt $spacecnt ];
@@ -349,7 +356,8 @@ run_module()
 				message "${inp_array[1]}"
 				;;
 			"SET")
-				RESPONSES[${inp_array[1]}]=${inp_array[2]}
+				tmpvalue=`replace_var "${inp_array[2]}"`
+				RESPONSES[${inp_array[1]}]=`eval echo "$tmpvalue"`
 				;;
 			"CODE")
 				IFS=','; typeset -a arg_array=(${inp_array[2]}); unset IFS;

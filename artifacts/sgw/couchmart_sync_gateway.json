@@ -5,7 +5,7 @@
     "couchmart": {
       "import_docs": "continuous",
       "enable_shared_bucket_access": true,
-      "server": "http://ec2-34-222-130-187.us-west-2.compute.amazonaws.com:8091",
+      "server": "couchbase://cb-example-0000.cb-example.cktest.svc",
       "bucket": "couchmart",
       "username":"Administrator",
       "password": "password",

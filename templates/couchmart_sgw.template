@@ -2,7 +2,7 @@
   "interface":":{{PORT}}",
   "log": ["HTTP", "Auth"],
   "databases": {
-    "couchmart": {
+    "{{DATABASE}}": {
       "import_docs": "continuous",
       "enable_shared_bucket_access": true,
       "server": "{{SERVER}}",
