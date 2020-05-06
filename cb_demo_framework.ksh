@@ -277,8 +277,13 @@ set_var()
 	
 	#record values
 	if [ ! -z $writemode ];then
-		eval echo "SET~${varname}~${varvalue}" >> ./module/$recordfile
+		final=`echo $varvalue | sed -e 's/\"/\\\\\"/g'`
+		final=`echo $final | sed -e "s/\'/\\\\\'/g"`
+		final=`echo $final | sed -e 's/\`/\\\\\`/g'`
+		echo $final
+		eval echo "SET~${varname}~${final}" >> ./module/$recordfile
 	fi
+	read pause
 }
 
 dump_var()
@@ -397,7 +402,10 @@ run_module()
 		if [ ! -z $writemode ];then
 			if [ ${inp_array[0]} == "PROMPT" ];then
 				echo "# $line" >> ./module/$recordfile
-				eval echo "SET~${inp_array[2]}~${RESPONSES[${inp_array[2]}]}" >> ./module/$recordfile
+				final=`echo ${RESPONSES[${inp_array[2]}]} | sed -e 's/\"/\\\\\"/g'`
+				final=`echo $final | sed -e "s/\'/\\\\\'/g"`
+				final=`echo $final | sed -e 's/\`/\\\\\`/g'`
+				eval echo "SET~${inp_array[2]}~$final" >> ./module/$recordfile
 			else
 				echo $line >> ./module/$recordfile
 			fi
@@ -480,8 +488,10 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 		break;
 	elif [ $SELECTION == "d" ];then
 		if [ $TYPE == "MOD" ];then
+			START=0
 			TYPE="DEMO"
 		else
+			START=0
 			TYPE="MOD"
 		fi
 		continue

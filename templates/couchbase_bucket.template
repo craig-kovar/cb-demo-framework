@@ -1,0 +1,15 @@
+apiVersion: couchbase.com/v2
+kind: CouchbaseBucket
+metadata:
+  name: {{BUCKET}}
+  labels:
+    cluster: {{CLUSTER}}
+spec:
+  memoryQuota: {{MEMORYQUOTA}}Mi
+  replicas: {{REPLICAS}}
+  ioPriority: low
+  evictionPolicy: {{EVICTIONPOLICY}}
+  conflictResolution: {{CONFLICT}}
+  enableFlush: {{FLUSH}}
+  enableIndexReplica: true
+  compressionMode: passive
