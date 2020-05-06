@@ -254,17 +254,20 @@ parse_template()
 		debug "[TEMPLATE] raw_line: $fline"
 		spacecnt=`get_leading_space $fline`
 		valline=`echo "$fline"`
+		printline=""
 		if [ `echo "$fline" | grep -c "{{"` -ge 1 ];then
 			debug "[TEMPLATE] Variable detected..."
 			valline=`get_var_val $fline`
+		
+			printline=""
+			i=0
+			while [ $i -lt $spacecnt ];
+			do
+  				printline="$printline "
+				let i=i+1
+			done
 		fi
-		printline=""
-		i=0
-		while [ $i -lt $spacecnt ];
-		do
-  			printline="$printline "
-			let i=i+1
-		done
+		
 		printline="${printline}${valline}"
 
 		debug "[TEMPLATE] - Adding line: $printline"
