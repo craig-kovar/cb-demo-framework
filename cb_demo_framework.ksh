@@ -253,8 +253,9 @@ parse_template()
 	do
 		debug "[TEMPLATE] raw_line: $fline"
 		spacecnt=`get_leading_space $fline`
-		valline=$fline
-		if [[ `grep -c "{{"` -ge 1 || `grep -c "}}"` -ge 1 ]];then
+		valline=`echo "$fline"`
+		if [ `echo "$fline" | grep -c "{{"` -ge 1 ];then
+			debug "[TEMPLATE] Variable detected..."
 			valline=`get_var_val $fline`
 		fi
 		printline=""
@@ -290,6 +291,7 @@ set_var()
 		echo $final
 		eval echo "SET~${varname}~${final}" >> ./module/$recordfile
 	fi
+	echo "$varname set to $varvalue, hit any key to continue..."
 	read pause
 }
 
