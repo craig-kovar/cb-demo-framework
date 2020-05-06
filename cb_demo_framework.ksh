@@ -134,6 +134,8 @@ replace_var()
 	orig=$1
 	final=`echo $orig | sed -e 's/{{/${RESPONSES[/g'`
 	final=`echo $final | sed -e 's/}}/]}/g'`
+	final=`echo $final | sed -e 's/"${/\"${/g'`
+	final=`echo $final | sed -e 's/}"/}\"/g'`
 
 	echo $final
 }
@@ -193,13 +195,15 @@ display() {
 	echo ""
 	if [ $type == "MOD" ];then
 		while [[ $i -lt $max && $i -lt ${#MODULES[@]} ]];do
-			echo "[$j] - ${MODULES[$i]}"
+			printf "[%3s] - %-50s\n" "$j" "${MODULES[$i]}"
+			#echo "[$j] - ${MODULES[$i]}"
 			let j=j+1
 			let i=i+1
 		done
 	elif [ $type == "DEMO" ];then
 		while [[ $i -lt $max && $i -lt ${#DEMOS[@]} ]];do
-			echo "[$j] - ${DEMOS[$i]}	: ${DEMODESC[$i]}"
+			printf "[%3s] - %-20s: %-100s\n" "$j" "${DEMOS[$i]}" "${DEMODESC[$i]}"
+			#echo "[$j] - ${DEMOS[$i]}	: ${DEMODESC[$i]}"
 			let j=j+1
 			let i=i+1
 		done
@@ -270,6 +274,11 @@ set_var()
 	read varvalue
 	debug "[SETVAR] Setting $varname to $varvalue"
 	RESPONSES[$varname]=$varvalue
+	
+	#record values
+	if [ ! -z $writemode ];then
+		eval echo "SET~${varname}~${varvalue}" >> ./module/$recordfile
+	fi
 }
 
 dump_var()

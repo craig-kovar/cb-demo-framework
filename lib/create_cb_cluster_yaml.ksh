@@ -64,7 +64,7 @@ echo "Enter analytics service cluster quota in MB [1024]: "
 aquota=`read_inp 1024`
 
 echo "Enter index storage setting (plasma or memory_optimized)  [memory_optimized]: "
-istorage=`read_inp 1024`
+istorage=`read_inp memory_optimized`
 
 echo "    dataServiceMemoryQuota: ${dquota}Mi" >> $workdir/${conffile}
 echo "    indexServiceMemoryQuota: ${iquota}Mi" >> $workdir/${conffile}
