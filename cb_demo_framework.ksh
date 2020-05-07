@@ -257,7 +257,10 @@ parse_template()
 		printline=""
 		if [ `echo "$fline" | grep -c "{{"` -ge 1 ];then
 			debug "[TEMPLATE] Variable detected..."
-			valline=`get_var_val $fline`
+			final=`echo $fline | sed -e 's/\"/\\\\\"/g'`
+                        final=`echo $final | sed -e "s/\'/\\\\\'/g"`
+                        final=`echo $final | sed -e 's/\`/\\\\\`/g'`
+			valline=`get_var_val $final`
 		
 			printline=""
 			i=0
