@@ -1,0 +1,21 @@
+# image: cbck/couchmart:framework
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: couchmart
+spec:
+  selector:
+    matchLabels:
+      app: couchmart
+  template:
+    metadata:
+      labels:
+        app: couchmart
+    spec:
+      containers:
+      - name: couchmart
+        image: cbck/couchmart:framework
+        imagePullPolicy: Always
+        env:
+        - name: CONNSTR
+          value: {{CONNSTR}}

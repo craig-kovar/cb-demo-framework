@@ -4,3 +4,4 @@ unit_test/*
 test.py
 work
 git_repos
+module/*.bkup

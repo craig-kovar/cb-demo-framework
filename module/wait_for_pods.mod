@@ -1,4 +1,4 @@
-PROMPT~Enter name of cluster~CLUSTER~cb-example
+PROMPT~Enter name of cluster or pods to monitor (i.e. cb-example, couchmart, etc...)~CLUSTER~cb-example
 PROMPT~Enter namespace of cluster~NS~default
 PROMPT~Enter expected number of pods in cluster~PODS~3
 PROMPT~Enter number of retries to check~RETRIES~10

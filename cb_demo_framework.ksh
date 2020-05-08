@@ -134,6 +134,11 @@ replace_var()
 	orig=$1
 	final=`echo $orig | sed -e 's/{{/${RESPONSES[/g'`
 	final=`echo $final | sed -e 's/}}/]}/g'`
+	
+	#final=`echo $final | sed -e 's/\"/\\\\\"/g'`
+	final=`echo $final | sed -e "s/\'/\\\\\'/g"`
+	#final=`echo $final | sed -e 's/\`/\\\\\`/g'`
+	
 	final=`echo $final | sed -e 's/"${/\"${/g'`
 	final=`echo $final | sed -e 's/}"/}\"/g'`
 
@@ -291,6 +296,7 @@ set_var()
 	
 	#record values
 	if [ ! -z $writemode ];then
+		echo "#==================== SET COMMAND =========================" >> ./module/$recordfile
 		final=`echo $varvalue | sed -e 's/\"/\\\\\"/g'`
 		final=`echo $final | sed -e "s/\'/\\\\\'/g"`
 		final=`echo $final | sed -e 's/\`/\\\\\`/g'`
@@ -346,12 +352,17 @@ run_module()
 {
 	file="./module/${1}"
 	info "Running module $file"
+	if [ ! -z $writemode ];then
+		echo "#======================= $file ===============================" >> ./module/$recordfile
+	fi
 	while read line
 	do
 		debug "[RUN_MODULE] Line : $line"
 		CHECKLINE=`echo $line | awk '{$1=$1};1'`
 		FIRSTCHAR=${CHECKLINE:0:1}
 		if [[ ! -z $FIRSTCHAR && $FIRSTCHAR == "#" ]];then
+			continue
+		elif [[ -z $FIRSTCHAR ]];then
 			continue
 		fi
 
