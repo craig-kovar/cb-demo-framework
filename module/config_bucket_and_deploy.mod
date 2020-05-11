@@ -1,3 +1,4 @@
+#@ Configure a couchbase bucket yaml and deploy to a specified namespace
 PROMPT~Enter working directory~WORKDIR~./work
 PROMPT~Enter namespace where cluster is located~NS~default
 PROMPT~Enter bucket name~BUCKET~default

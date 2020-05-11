@@ -1,4 +1,4 @@
-#@ This is an example calling the NoSQL Summit Script
+#@ Generate TLS certificates and deploying them as secrets
 PROMPT~Enter the namespace to generate certs for~NS~default
 PROMPT~Enter the cluster name~CLUSTER~cb-example
 PROMPT~Enter the working directory to use~WORKDIR~./work

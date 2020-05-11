@@ -1,3 +1,4 @@
+#@ Process a generic template.  Please note all templated variables should be set prior
 PROMPT~Enter working directory~WORKDIR~./work
 PROMPT~Enter name of template file located in "templates" directory~TFILE~
 PROMPT~Enter the file extenstion to use for generated file~EXTENSION~yaml

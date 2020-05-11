@@ -1,3 +1,4 @@
+#@ Deploy couchmart application
 PROMPT~Enter the namespace to deploy couchmart into~CMNS~default
 PROMPT~Enter the Couchbase cluster name to connect to~CMCLUSTER~cb-example
 PROMPT~Enter the namespace where the CB Cluster is deployed~NS~default

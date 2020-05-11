@@ -1,3 +1,4 @@
+#@ Execute a single query using CBQ
 PROMPT~Enter name of the pod to execute from~POD~cb-example-0000
 PROMPT~Enter namespace of your cluster~NS~default
 PROMPT~Enter username~USER~Administrator

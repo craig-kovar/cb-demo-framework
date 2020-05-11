@@ -1,3 +1,4 @@
+#@ Execute a query file using CBQ
 PROMPT~Enter data location you want to load (Local path)~FILEPATH~
 PROMPT~Enter data file you want to load (Local file)~FILE~
 PROMPT~Enter name of the pod to load to~POD~cb-example-0000

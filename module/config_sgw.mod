@@ -1,3 +1,4 @@
+#@ Configure SGW configuration template with connection, db, bucket, etc...
 PROMPT~Enter working directory~WORKDIR~./work
 PROMPT~Enter name of template file located in "templates" directory~TFILE~
 PROMPT~Enter namespace where Couchbase is deployed~CBNS~

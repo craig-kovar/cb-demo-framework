@@ -17,8 +17,9 @@ VERSION=0.0.1
 script=$0
 typeset -A RESPONSES
 typeset -a MODULES
+typeset -A MODDESC
 typeset -a DEMOS
-typeset -a DEMODESC
+typeset -A DEMODESC
 TYPE="MOD"
 export RESPONSES
 START=0
@@ -152,6 +153,12 @@ load_modules()
 	do
 		temp=`echo $(basename $file)`
 		MODULES+=($temp)
+		
+		topline=`head -1 $file`
+		debug "$topline"
+		if [[ ! -z $topline && ${topline:0:2} == "#@" ]];then
+			MODDESC[$temp]="${topline:2}"
+		fi
 	done
 }
 
@@ -166,7 +173,7 @@ load_demos()
 		topline=`head -1 $file`
 		debug "$topline"
 		if [[ ! -z $topline && ${topline:0:2} == "#@" ]];then
-			DEMODESC+=("${topline:2}")
+			DEMODESC[$temp]="${topline:2}"
 		fi
 	done
 }
@@ -200,14 +207,13 @@ display() {
 	echo ""
 	if [ $type == "MOD" ];then
 		while [[ $i -lt $max && $i -lt ${#MODULES[@]} ]];do
-			printf "[%3s] - %-50s\n" "$j" "${MODULES[$i]}"
-			#echo "[$j] - ${MODULES[$i]}"
+			printf "[%3s] - %-35s: %-100s\n" "$j" "${MODULES[$i]}" "${MODDESC[${MODULES[$i]}]}"
 			let j=j+1
 			let i=i+1
 		done
 	elif [ $type == "DEMO" ];then
 		while [[ $i -lt $max && $i -lt ${#DEMOS[@]} ]];do
-			printf "[%3s] - %-20s: %-100s\n" "$j" "${DEMOS[$i]}" "${DEMODESC[$i]}"
+			printf "[%3s] - %-20s: %-100s\n" "$j" "${DEMOS[$i]}" "${DEMODESC[${DEMOS[$i]}]}"
 			#echo "[$j] - ${DEMOS[$i]}	: ${DEMODESC[$i]}"
 			let j=j+1
 			let i=i+1
