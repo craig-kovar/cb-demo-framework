@@ -326,12 +326,12 @@ dump_var()
 
 new_record_file()
 {
-	echo "Enter name of file to record responses, i.e. test.demo: "
+	echo "Enter name of file to record responses, i.e. test.demo, test.mod: "
 	read recordfile
 	fileext=`echo ${recordfile##*.}`
 
-	while [[ $fileext != "demo" ]];do
-		echo "Enter name of file to record responses, i.e. test.demo: "
+	while [[ $fileext != "demo" && $fileext != "mod" ]];do
+		echo "Enter name of file to record responses, i.e. test.demo, test.mod: "
 		read recordfile
 		fileext=`echo ${recordfile##*.}`
 	done

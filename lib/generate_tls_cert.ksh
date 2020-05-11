@@ -27,7 +27,7 @@ git clone https://github.com/OpenVPN/easy-rsa ./easy-rsa
 sh ./easy-rsa/easyrsa3/easyrsa init-pki
 echo "Couchbase CA" > cbca.txt
 sh ./easy-rsa/easyrsa3/easyrsa build-ca nopass < cbca.txt
-sh ./easy-rsa/easyrsa3/easyrsa --subject-alt-name=DNS:*.${cluster},DNS:*.${cluster}.${ns},DNS:*.${cluster}.${ns}.svc,DNS:${cluster}-srv,DNS:${cluster}-srv.${ns},DNS:${cluster}-srv.${ns}.svc,DNS:localhost build-server-full couchbase-server nopass
+sh ./easy-rsa/easyrsa3/easyrsa --subject-alt-name=DNS:*.${cluster},DNS:*.${cluster}.${ns},DNS:*.${cluster}.${ns}.svc,DNS:${cluster}-srv,DNS:${cluster}-srv.${ns},DNS:${cluster}-srv.${ns}.svc,DNS:localhost,DNS:*.se-couchbasedemos.com build-server-full couchbase-server nopass
 openssl rsa -in ./easy-rsa/easyrsa3/pki/private/couchbase-server.key -out ./easy-rsa/easyrsa3/pki/private/pkey.key.der -outform DER
 openssl rsa -in ./easy-rsa/easyrsa3/pki/private/pkey.key.der -inform DER -out ./easy-rsa/easyrsa3/pki/private/pkey.key -outform PEM
 cp -p ./easy-rsa/easyrsa3/pki/issued/couchbase-server.crt ./easy-rsa/easyrsa3/pki/issued/chain.pem

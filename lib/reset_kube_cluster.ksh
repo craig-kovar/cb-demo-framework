@@ -33,8 +33,20 @@ do
 	clusterroles+=("$cr")
 done
 
+for raw_cr in `kubectl get clusterroles | grep external-dns`
+do
+	cr=`echo "$raw_cr" | cut -d' ' -f 1`
+	clusterroles+=("$cr")
+done
+
 typeset -a clusterrolebindings
 for raw_crb in `kubectl get clusterrolebindings | grep couchbase`
+do
+	crb=`echo "$raw_crb" | cut -d' ' -f 1`
+	clusterrolebindings+=("$crb")
+done
+
+for raw_crb in `kubectl get clusterrolebindings | grep external-dns`
 do
 	crb=`echo "$raw_crb" | cut -d' ' -f 1`
 	clusterrolebindings+=("$crb")

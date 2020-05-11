@@ -143,11 +143,14 @@ if [ $tlssec = "y" ];then
 		echo "Enter the services to expose [admin|xdcr|client] or q to stop: "
 		service=`read_inp admin`
 	done
-	
-	for i in "${!services[@]}"
-	do
-		echo "    - ${i}" >> $workdir/${conffile}
-	done
+
+	if [ ${#services[@]} -ge 1 ];then
+		echo "    exposedFeatures:" >> $workdir/${conffile}
+		for i in "${!services[@]}"
+		do
+			echo "    - ${i}" >> $workdir/${conffile}
+		done
+	fi
 
 	echo "    exposedFeatureServiceType: ${exposetype}" >> $workdir/${conffile}
 	echo "    tls:" >> $workdir/${conffile}
@@ -157,7 +160,7 @@ if [ $tlssec = "y" ];then
 
 	if [ $exposetype = "LoadBalancer" ];then
 		echo "    dns:" >> $workdir/${conffile}
-		echo "Enter domain name to expose services under: "
+		echo "Enter domain name to expose services under [se-couchbasedemos.com]: "
 		dns=`read_inp se-couchbasedemos.com`
 		echo "      domain: $dns" >> $workdir/${conffile}
 	
