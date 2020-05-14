@@ -1,8 +1,9 @@
 #@ Load a data using cbimport-csv
 PROMPT~Enter data location you want to load (Local path)~FILEPATH~
 PROMPT~Enter data file you want to load (Local file)~FILE~
-PROMPT~Enter name of the pod to load to~POD~cb-example-0000
+PROMPT~Enter name prefix of the pod to load from~PODPFX~cb-example-0
 PROMPT~Enter namespace of your cluster~NS~default
+CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
 PROMPT~Enter bucket name~BUCKET~default
 PROMPT~Enter username~USER~Administrator
 PROMPT~Enter password~PASS~password

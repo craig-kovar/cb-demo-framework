@@ -133,12 +133,15 @@ message()
 replace_var()
 {
 	orig=$1
+	ssq=$2  #Skip escaping single quotes
 	final=`echo $orig | sed -e 's/{{/${RESPONSES[/g'`
 	final=`echo $final | sed -e 's/}}/]}/g'`
-	
-	#final=`echo $final | sed -e 's/\"/\\\\\"/g'`
-	final=`echo $final | sed -e "s/\'/\\\\\'/g"`
-	#final=`echo $final | sed -e 's/\`/\\\\\`/g'`
+
+	if [[ -z $ssq || "$ssq" != "true" ]]; then
+		#final=`echo $final | sed -e 's/\"/\\\\\"/g'`
+		final=`echo $final | sed -e "s/\'/\\\\\'/g"`
+		#final=`echo $final | sed -e 's/\`/\\\\\`/g'`
+	fi
 	
 	final=`echo $final | sed -e 's/"${/\"${/g'`
 	final=`echo $final | sed -e 's/}"/}\"/g'`
@@ -410,7 +413,7 @@ run_module()
 				eval $kcommand
 				;;
 			"KUBEEXEC")
-				kcommand=`replace_var "${inp_array[1]}"`
+				kcommand=`replace_var "${inp_array[1]}" "true"`
 				kcommand="kubectl exec $kcommand"
 				debug "[KUBEEXEC] Running command $kcommand"
 				eval $kcommand < /dev/tty

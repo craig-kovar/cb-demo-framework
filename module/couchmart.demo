@@ -1,4 +1,4 @@
-#@ Couchmart Demo Deployment
+#@ Deploy the couchmart demo
 #======================= ./module/set_up_k8s.mod ===============================
 #======================= ./module/deploy_crd.mod ===============================
 KUBECTL~create -f ./artifacts/cbao/crd.yaml --save-config
@@ -34,7 +34,7 @@ SET~CONFFILE~couchmart-cluster.yaml
 SET~NS~couchmart
 KUBECTL~create -f {{WORKDIR}}/{{CONFFILE}} -n {{NS}} --save-config
 #======================= ./module/wait_for_pods.mod ===============================
-# PROMPT~Enter name of cluster or pods to monitor (i.e. cb-example, couchmart, etc...)~CLUSTER~cb-example
+# PROMPT~Enter name prefix of cluster or pods to monitor (i.e. cb-example, couchmart, etc...)~CLUSTER~cb-example
 SET~CLUSTER~cb-example
 # PROMPT~Enter namespace of cluster~NS~default
 SET~NS~couchmart
@@ -66,8 +66,8 @@ SET~CONFLICT~seqno
 SET~FLUSH~true
 TEMPLATE~couchbase_bucket.template~{{WORKDIR}}~yaml~BUCKETTEMP
 KUBECTL~create -f {{BUCKETTEMP}} -n {{NS}} --save-config
-#======================= ./module/wait_for_pods.mod ===============================
-#PROMPT~Enter time to sleep in seconds~SLEEP~30
+#======================= ./module/sleep.mod ===============================
+# PROMPT~Enter time to sleep in seconds~SLEEP~30
 SET~SLEEP~60
 MESSAGE~Sleeping for {{SLEEP}} seconds
 EXEC~sleep {{SLEEP}}
@@ -118,7 +118,8 @@ SET~CLUSTER~cb-example
 SET~PORT~4984
 # PROMPT~Enter SGW Database name~DATABASE~
 SET~DATABASE~couchmart
-SET~SERVER~couchbase://{{CLUSTER}}-0000.{{CLUSTER}}.{{CBNS}}.svc
+CODE~get_pod_by_nameprefix.ksh~{{CLUSTER}},{{CBNS}}~SGWPOD
+SET~SERVER~couchbase://{{SGWPOD}}.{{CLUSTER}}.{{CBNS}}.svc
 # PROMPT~Enter the CB Bucket to connect to~BUCKET~default
 SET~BUCKET~couchmart
 # PROMPT~Enter the CB User to connect with~USER~Administrator
@@ -145,7 +146,6 @@ SET~TFILE~sgw_deployment.template
 SET~EXTENSION~yaml
 MESSAGE~The location of the generated file will be stored in the variable TFILE
 TEMPLATE~{{TFILE}}~{{WORKDIR}}~{{EXTENSION}}~TFILE
-
 #======================= ./module/deploy_pod.mod ===============================
 # PROMPT~Enter working directory~WORKDIR~./work
 SET~WORKDIR~./work/couchmart
@@ -155,7 +155,7 @@ SET~NS~couchmart
 SET~FILE~sgw_deployment.yaml
 KUBECTL~create -f {{WORKDIR}}/{{FILE}} -n {{NS}} --save-config
 #======================= ./module/wait_for_pods.mod ===============================
-# PROMPT~Enter name of cluster or pods to monitor (i.e. cb-example, couchmart, etc...)~CLUSTER~cb-example
+# PROMPT~Enter name prefix of cluster or pods to monitor (i.e. cb-example, couchmart, etc...)~CLUSTER~cb-example
 SET~CLUSTER~sync-gateway
 # PROMPT~Enter namespace of cluster~NS~default
 SET~NS~couchmart
