@@ -5,3 +5,7 @@ This is a framework designed to record and replay Couchbase demos.  This framewo
 Please refer to the following links on how to install, use and extend the CB Demo Framework.
 
 [Install and Run CB Demo Framework](./docs/install_and_run.md)
+
+[List of configured modules](./docs/module_list.md)
+
+[List of configured scripts](./docs/lib_list.md)
