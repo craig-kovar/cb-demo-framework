@@ -24,3 +24,7 @@ The CB Demo Framework is a simple shell script and as such can be run as follows
 You can optionally pass the following optional arguments.
 
 ![usage](https://github.com/craig-kovar/cb-demo-framework/blob/master/docs/cb-demo-framework-usage.png)
+
+Upon successful execution of the script you should see the following
+
+![screen](https://github.com/craig-kovar/cb-demo-framework/blob/master/docs/cb-demo-framework-screen.png)
