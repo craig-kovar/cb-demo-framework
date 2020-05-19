@@ -16,3 +16,11 @@ In order to run the CB Demo Framework this requires a kubernetes cluster to be a
 
 
 ## Running the CB Demo framework
+
+The CB Demo Framework is a simple shell script and as such can be run as follows
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`./cb_demo_framework.ksh`
+
+You can optionally pass the following optional arguments.
+
+![usage](./docs/cb-demo-framework-usage "usage")
