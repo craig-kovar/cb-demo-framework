@@ -6,6 +6,8 @@ Please refer to the following links on how to install, use and extend the CB Dem
 
 [Install and Run CB Demo Framework](./docs/install_and_run.md)
 
+[Use the Couchbase Demo Framework](./docs/using_cb_framework.md)
+
 [List of configured modules](./docs/module_list.md)
 
 [List of configured scripts](./docs/lib_list.md)

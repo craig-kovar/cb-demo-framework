@@ -1,0 +1,2 @@
+create primary index on test;
+create index idx1 on test(id);

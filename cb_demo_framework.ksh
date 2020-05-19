@@ -557,7 +557,7 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 	elif [ $SELECTION == "v" ];then
 		dump_var
 	elif [ $SELECTION == "w" ];then
-		echo "Entered into switch mode"
+		#echo "Entered into switch mode"
 		if [ -z $writemode ];then
 			if [ -z $recordfile ];then
 				new_record_file
