@@ -5,6 +5,21 @@ The Couchbase Demo Framework is designed to operate in two modules
 * Interactive
 * recording
 
+Please refer to the following sections for more detail
+
+<!-- TOC START min:2 max:6 link:true asterisk:false update:true -->
+- [Interactive](#interactive)
+- [Recording mode](#recording-mode)
+- [Toggling modes](#toggling-modes)
+  - [First time enabling recording mode](#first-time-enabling-recording-mode)
+- [Templating, Setting, and Viewing variables](#templating-setting-and-viewing-variables)
+  - [Manually setting a variable](#manually-setting-a-variable)
+  - [Viewing the known variables](#viewing-the-known-variables)
+- [Replaying a demo](#replaying-a-demo)
+- [Bundling a demo for distribution](#bundling-a-demo-for-distribution)
+<!-- TOC END -->
+
+
 ## Interactive
 
 In the interactive mode you are able to execute different modules, follow the on-screen prompts and generally play around with steps.
@@ -58,3 +73,19 @@ This will prompt you for the variable name and value
 You can alternatively view the list of known variables by selecting **'v'**.  This will list all known variables and values
 
 ![variables](https://github.com/craig-kovar/cb-demo-framework/blob/master/docs/cb-demo-framework-variables.png)
+
+## Replaying a demo
+
+After you have recorded a demo, you can now replay the demo on demand.  The Couchbase Demo Framework manages two lists to display, **MODULES** for interactive and/or recording mode and **DEMOS** to replay recorded demos.  To switch between the two display modes simple select the **'d'** option.  Once you are on the **demo** screen simply select the demo to run.
+
+**NOTE - As noted recording mode will capture the user input except for a few noted exceptions [_config_cb_cluster.mod_, _config_secret.mod_ ].  The generated yaml output files will still be available however, so best practice is to turn off recording when running these modules and turn back on afterwards.**
+
+## Bundling a demo for distribution
+
+The Couchbase Demo Framework allows you to additionally bundle a demo into a sharable gzip file using the argument **-b** when launching the tool.
+
+`./cb_demo_framework.ksh -b <tar file name>`
+
+This will deploy the demo locally and capture the artifacts into the specified tar file during execution. You additionally have the ability to manually add any files to the bundled demo.  However,  please note that setting the **-b** flag will not allow you to run any modules and only configured demos.
+
+![bundle](https://github.com/craig-kovar/cb-demo-framework/blob/master/docs/cb-demo-framework-bundle.png)

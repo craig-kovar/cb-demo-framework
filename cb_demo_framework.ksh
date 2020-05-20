@@ -9,7 +9,7 @@
 #
 #	@Author - Craig Kovar
 #----------------------------------------------------------------------------------#
-VERSION=0.0.1
+VERSION=0.5.0
 
 #----------------------------------------------------------------------------------#
 #	SCRIPT VARIABLES
@@ -21,6 +21,7 @@ typeset -A MODDESC
 typeset -a DEMOS
 typeset -A DEMODESC
 TYPE="MOD"
+TYPELOCK=0
 export RESPONSES
 START=0
 PAGESIZE=20
@@ -66,6 +67,7 @@ usage() {
 	echo ""
 	echo "$1 [-n|--nolog] [-d|--debug] [-l|-logfile <filename>] [-h|--help]"
 	echo "		[-p|--pagesize <size>] [-g|--git-refresh] [--list <git|mod|demo>]"
+	echo "		[-b|--bundle-demo <package name>]"
 	echo ""
 	echo "	-n | --nolog		=	Disables logging. Logging is enabled by default"
 	echo "	-d | --debug		=	Enables debug logging.  Disabled by default"
@@ -74,6 +76,7 @@ usage() {
 	echo "	-h | --help		=	Display usage information"
 	echo "	-g | --git-refresh	=	Refresh the recorded git repositories"
 	echo "	--list git|mod|demo	=	List the specified resource"
+	echo "	-b | --bundle-demo	=	Deploy demo and bundle to sharable gzip file"
 	echo ""
 }
 
@@ -182,11 +185,48 @@ load_demos()
 }
 
 
+list_tar_values() {
+	if [ ! -f $TARFILE ];then
+		info "Tarfile [$TARFILE] not found"
+	else
+		tar tf $TARFILE
+	fi
+}
+
+manually_set_tar() {
+	
+	prompt_file="z"
+	while [ "$prompt_file" != "n" ];do
+		echo ""
+		info "Following artifacts bundled into $TARFILE"
+		list_tar_values
+		echo ""
+		echo "Do you want to manually add additional files [y/n]?"
+		read prompt_file
+
+		if [ "$prompt_file" == "y" ];then
+			echo "Enter file to include in bundle (use relative path): "
+			read add_file
+			debug "[MANUAL BUNDLE] - Adding $add_file to $TARFILE"
+			tar rf $TARFILE $add_file
+		fi
+	done
+
+}
+
+
 display() {
 	startnum=$1
 	offset=$2
 	type=$3
 
+	if [ $TYPELOCK -lt 1 ];then
+		dstring="Switch to demo display"
+	else
+		dstring="Bundling demo - disabled"
+	fi
+
+	#TODO - switch to printf not echo
 	clear	
 	echo "==========================================================================================="
 	echo "				Couchbase Demo Framework					 "
@@ -199,7 +239,7 @@ display() {
 	echo "												 "
 	echo "			< Page Back = 'b'              'p' = Page Forward >			 "
 	echo "		        s - Set variable	        v - Display Variables			 "
-	echo "			d - Switch to demo display	q - quit				 "
+	echo "			d - ${dstring}	q - quit				 "
 	echo "==========================================================================================="
 
 	j=0	
@@ -408,6 +448,33 @@ run_module()
 				;;
 			"KUBECTL")
 				kcommand=`replace_var "${inp_array[1]}"`
+
+				if [ $TYPELOCK -eq 1 ];then
+					if [[ ${kcommand:0:6} == "create" ]];then
+						debug "[BUNDLE] - Detected a kubectl create statement to bundle"
+						debug "[BUNDLE] - $kcommand"
+						secondpos=`echo $kcommand | cut -d' ' -f2`
+						if [ "$secondpos" == "-f" ];then
+							tar_add_file=`echo $kcommand | cut -d' ' -f3`
+							eval "tar rf $TARFILE $tar_add_file"
+						elif [ "$secondpos" == "secret" ];then
+							tar_add_file=`echo $kcommand | cut -d' ' -f5`
+							final_tar_file=`echo ${tar_add_file##*=}`
+							eval "tar rf $TARFILE $final_tar_file"
+						fi
+					elif [[ ${kcommand:0:2} == "cp" ]];then
+						debug "[BUNDLE] - Detected a kubectl cp statement to bundle"
+						debug "[BUNDLE] - $kcommand"
+						secondpos=`echo $kcommand | cut -d' ' -f2`
+						if [ $secondpos == "-n" ];then
+							cpfile=`echo $kcommand | cut -d' ' -f4`
+							eval "tar rf $TARFILE $cpfile"
+						else
+							eval "tar rf $TARFILE $secondpos"
+						fi
+					fi	
+				fi				
+
 				kcommand="kubectl $kcommand"
 				debug "[KUBECTL] Running command $kcommand"
 				eval $kcommand
@@ -427,6 +494,23 @@ run_module()
 				eval $command < /dev/tty
 				;;
 			"TEMPLATE")
+				if [ $TYPELOCK -eq 1 ];then
+					debug "[BUNDLE] Detected template file"
+					suffix=`echo ${inp_array[1]##*.}`
+					#echo "SUFFIX = $suffix"
+					if [ "$suffix" == "template" ];then
+						eval "tar rf $TARFILE ./templates/${inp_array[1]}"
+					else
+						template=`get_var_val ${inp_array[1]}`
+						#echo "DEBUG: $template"
+						if [ ${template:0:11} != "./templates" ];then
+							eval "tar rf $TARFILE ./templates/$template"
+						else
+							eval "tar rf $TARFILE $template"
+						fi
+					fi
+				fi
+
 				parse_template ${inp_array[1]} ${inp_array[2]} ${inp_array[3]} ${inp_array[4]}
 				;;
 			* )
@@ -448,6 +532,13 @@ run_module()
 		fi
 		
 	done < $file
+
+	if [ $TYPELOCK -ge 1 ];then
+		#echo "TODO - prompt for additional files"
+		manually_set_tar
+
+		gzip $TARFILE
+	fi
 }
 
 #----------------------------------------------------------------------------------#
@@ -482,6 +573,27 @@ while [ "$1" != "" ]; do
 			info "Refreshing the git repositories..."
 			ksh lib/git_helper.ksh
 			info "hit any key to continue..."
+			pause
+			;;
+                -b | --bundle-demo)
+			info "Bundling demo(s)"
+			TYPE="DEMO"
+			TYPELOCK=1
+			shift
+			TARFILE=$1
+			if [ -z $TARFILE ];then
+				echo ""
+				info "ERROR - Tarfile must be provided with -b option"
+				echo ""
+				exit 1
+			fi
+
+			if [ -f $TARFILE ];then
+				info "Tarfile [$TARFILE] detected, removing..."
+				rm $TARFILE
+			fi
+
+			info "Packaging demo to $TARFILE"
 			pause
 			;;
 		--list)
@@ -523,12 +635,14 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 	if [[ -z $SELECTION || $SELECTION == "q" ]];then
 		break;
 	elif [ $SELECTION == "d" ];then
-		if [ $TYPE == "MOD" ];then
-			START=0
-			TYPE="DEMO"
-		else
-			START=0
-			TYPE="MOD"
+		if [ $TYPELOCK -lt 1 ];then
+			if [ $TYPE == "MOD" ];then
+				START=0
+				TYPE="DEMO"
+			else
+				START=0
+				TYPE="MOD"
+			fi
 		fi
 		continue
 	elif [ $SELECTION == "p" ];then
@@ -586,6 +700,11 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 				read pause
 				continue
 			fi
+			
+			if [ $TYPELOCK -ge 1 ];then
+				tar rf $TARFILE ./module/${DEMOS[$MODNUM]}
+			fi
+
 			run_module ${DEMOS[$MODNUM]}
 			pause
 			continue

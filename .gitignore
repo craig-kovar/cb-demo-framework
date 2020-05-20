@@ -6,3 +6,6 @@ work
 git_repos
 module/*.bkup
 module/dpz.demo
+*.tar
+*.gz
+*.zip
