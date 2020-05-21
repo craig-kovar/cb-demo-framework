@@ -8,8 +8,14 @@ Please refer to the following links on how to install, use and extend the CB Dem
 
 [Using the Couchbase Demo Framework](./docs/using_cb_framework.md)
 
-[Quickstart](./docs/quickstart.md)
-
 [List of configured modules](./docs/module_list.md)
 
 [List of configured scripts](./docs/lib_list.md)
+
+## Tutorials and Examples
+
+We have also provided some tutorials and examples for reference as well.
+
+[Quickstart](./docs/quickstart.md)
+
+[Example - IaaS](./docs/example-iaas.md)

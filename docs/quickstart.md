@@ -1,6 +1,6 @@
 # Couchbase Demo Framework Quickstart Tutorial
 
-This tutorial will walk through a simple example of configuring two Couchbase clusters, loading some data into each cluster and creating some indexes through the **Couchbase Demo Framework**
+This tutorial will walk through a simple example of configuring two Couchbase clusters, loading some data into a cluster and creating some indexes through the **Couchbase Demo Framework**
 
 ## Prerequisites
 

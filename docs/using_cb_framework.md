@@ -60,7 +60,7 @@ MESSAGE~You entered the username of {{USER}}
 
 In this example,  we prompt the user for a username.  We store the entered value into a variable **USER** (Administrator is a default value here) and then display that value in a message back to the user.
 
-For further reference on the supported commands and syntax of a module file please refer to [module language overview](./docs/module_language.md)
+For further reference on the supported commands and syntax of a module file please refer to [module language overview](./module_language.md)
 
 ### Manually setting a variable
 

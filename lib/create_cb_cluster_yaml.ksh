@@ -231,10 +231,10 @@ while [ $cbnode = "y" ];do
 	if [ $limit = "y" ];then
 		echo "    resources:" >> $workdir/$conffile
 		echo "      limits:" >> $workdir/$conffile
-		echo "        cpu: ${cpu_limit}" >> $workdir/$conffile
+		echo "        cpu: \"${cpu_limit}\"" >> $workdir/$conffile
 		echo "        memory: ${mem_limit}" >> $workdir/$conffile
 		echo "      requests:" >> $workdir/$conffile
-		echo "        cpu: ${cpu_request}" >> $workdir/$conffile
+		echo "        cpu: \"${cpu_request}\"" >> $workdir/$conffile
 		echo "        memory: ${mem_request}" >> $workdir/$conffile
 	fi
 
