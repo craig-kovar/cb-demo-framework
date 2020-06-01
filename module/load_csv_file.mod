@@ -1,4 +1,5 @@
 #@ Load a data using cbimport-csv
+#^ Couchbase CLI command
 PROMPT~Enter data location you want to load (Local path)~FILEPATH~
 PROMPT~Enter data file you want to load (Local file)~FILE~
 PROMPT~Enter name prefix of the pod to load from~PODPFX~cb-example-0

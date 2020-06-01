@@ -1,4 +1,5 @@
 #@ Get the connection string information when exposing services using NodePort
+#^ Couchbase, Kubernetes
 PROMPT~Enter namespace~NS~default
 PROMPT~Enter Couchbase Cluster or SGW name prefix to search for~NAME~cb-example-0
 PROMPT~Retrieve SSL port [y/n]~SSL~n

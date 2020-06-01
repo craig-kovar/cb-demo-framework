@@ -1,4 +1,5 @@
 #@ Configure and build a namespace in the k8s cluster
+#^ kubernetes
 #Prompt for the namespace to create
 PROMPT~Enter the namespace~NS~couchbase
 #Prompt for working directory to use

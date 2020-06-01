@@ -1,4 +1,5 @@
 #@ Execute a single query using CBQ
+#^ Couchbase CLI Command,Couchbase
 PROMPT~Enter name prefix of the pod to execute from~PODPFX~cb-example-0
 PROMPT~Enter namespace of your cluster~NS~default
 CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD

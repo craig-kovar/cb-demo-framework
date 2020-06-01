@@ -1,4 +1,5 @@
 #@ Module to deploy the SDK Demo as a pod
+#^ Couchbase, Couchbase Demo Container
 PROMPT~Enter the NS to deploy into~NS~default
 KUBECTL~create -f ./artifacts/config/sdk-demo.yaml -n {{NS}} --save-config
 PROMPT~Enter local port for 8080 to use~LPORT1~8080

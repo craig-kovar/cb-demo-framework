@@ -1,4 +1,5 @@
 #@ Open a port-forward command to a pod based upon name prefix
+#^ kubernetes
 PROMPT~Enter name prefix of the pod to connect to~PODPFX~cb-example
 PROMPT~Enter namespace of your pod~NS~default
 CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD

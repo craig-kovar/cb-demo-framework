@@ -1,4 +1,5 @@
 #@ Load a data file using cbimport-json
+#^ Couchbase CLI command
 PROMPT~Enter data location you want to load (Local path)~FILEPATH~
 PROMPT~Enter data file you want to load (Local file)~FILE~
 PROMPT~Enter namespace of your cluster~NS~default

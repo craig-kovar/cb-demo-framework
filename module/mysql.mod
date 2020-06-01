@@ -1,4 +1,5 @@
 #@ Deploy a MySQL pod
+#^ 3rd party pods
 PROMPT~MySQL root password~ROOT_PASSWORD
 PROMPT~Enter MySQL Port~PORT~3306
 PROMPT~Enter Location for a Dataset file to load~DATASET

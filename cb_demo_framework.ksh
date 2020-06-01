@@ -9,51 +9,69 @@
 #
 #	@Author - Craig Kovar
 #----------------------------------------------------------------------------------#
-VERSION=0.5.0
+VERSION=0.7.0
 
 #----------------------------------------------------------------------------------#
 #	SCRIPT VARIABLES
 #----------------------------------------------------------------------------------#
 script=$0
-typeset -A RESPONSES
-typeset -a MODULES
-typeset -A MODDESC
-typeset -a DEMOS
-typeset -A DEMODESC
-TYPE="MOD"
-TYPELOCK=0
+typeset -A RESPONSES   		#Associative array to hold responses, "variables" from user input
+typeset -a MODULES     		#List of modules to display in build mode
+typeset -A MODDESC     		#Associative array to hold descriptions for related module
+typeset -a DEMOS       		#List of recorded demos to display
+typeset -A DEMODESC    		#Associative array to hold descriptions for related demo
+typeset -a TAGS			#Numeric list of possible tags
+typeset -A TAGMAP		#Mapping of modules to tags
+typeset -a FILTERMODS		#Filtered list of modules to display when using filtering
+
+FILTERSTRING=""
+BUILDFILTER=0
+TYPE="DEMO"	       		#The display mode: MOD or DEMO
+TYPELOCK=0	       		#Lock the type to prevent switching, used when bundling demos for distribution
 export RESPONSES
-START=0
-PAGESIZE=20
-SELECTION="0"
-INFO=1
-DEBUG=0
-LOGFILE=./cb_demo.log
-writemode=""
+START=0		       		#Starting location to display from
+PAGESIZE=20	       		#Page size to display
+SELECTION="0"          		#Default selection value
+INFO=1                 		#Enable Info logging by default
+DEBUG=0                		#Disable debug logging by default
+LOGFILE=./cb_demo.log  		#Default log file
+writemode=""           
 recordfile=""
 
 #----------------------------------------------------------------------------------#
 #	FUNCTIONS
 #----------------------------------------------------------------------------------#
 
+#-----------------------
+# Info logging method
+#-----------------------
 info() {
 	if [ $INFO -eq 1 ];then
 		echo "[`date '+%m/%d/%y %H:%M:%S'`] INFO $1 " | tee -a $LOGFILE
 	fi
 }
 
+#-----------------------
+# Debug logging method
+#-----------------------
 debug() {
 	if [ $DEBUG -eq 1 ];then
 		echo "[`date '+%m/%d/%y %H:%M:%S'`] DEBUG $1 " | tee -a $LOGFILE
 	fi
 }
 
+#-----------------------
+# Pause method - Prompts and pauses until user enters any key
+#-----------------------
 pause() {
 	echo ""
 	echo "Hit any key to continue..."
 	read pause
 }
 
+#-----------------------
+# Evaluate a variable to corresponding RESPONSES entry and returns that value
+#-----------------------
 get_var_val() {
 	temp=`replace_var "${1}"`
 	final=`eval echo "$temp"`
@@ -80,6 +98,12 @@ usage() {
 	echo ""
 }
 
+#-----------------------
+# Executed when parsing CODE command from a module.
+# This method will parse the comma seperated list of variables from a module
+# into space delimited variable to be passed to the specified ksh script in the
+# lib directory, and then execute that script
+#-----------------------
 exec_module_code()
 {
 	#Get the name of the command
@@ -111,6 +135,10 @@ exec_module_code()
 
 }
 
+#-----------------------
+# This method will prompt the user for input and record that input to the RESPONSES array.
+# If no input is provided then it will set the provided default value to the RESPONSES array.
+#-----------------------
 prompt()
 {
 	echo ""
@@ -152,6 +180,30 @@ replace_var()
 	echo $final
 }
 
+parse_tags()
+{
+	line=$1
+	module=$2
+
+	debug "Parsing tags: $line"
+
+	IFS=','; typeset -a tag_array=($line); unset IFS;
+	for i in "${tag_array[@]}"
+	do
+		typeset -l parsedval=`echo "$i" | sed -e 's/^ //g' | sed -e 's/ /_/g'`
+		debug "[PARSE_TAG] Tag $i mapped to ${parsedval}..."
+		
+		currmap=`echo ${TAGMAP[$parsedval]}`
+		if [ -z $currmap ];then
+			TAGS+=($parsedval)
+			currmap="$module"
+		else
+			currmap="$currmap,$module"
+		fi
+		TAGMAP[$parsedval]=$currmap
+	done
+}
+
 load_modules()
 {
 	debug "Loading modules"
@@ -161,11 +213,21 @@ load_modules()
 		MODULES+=($temp)
 		
 		topline=`head -1 $file`
-		debug "$topline"
+		secondline=`head -2 $file | tail -1`
 		if [[ ! -z $topline && ${topline:0:2} == "#@" ]];then
 			MODDESC[$temp]="${topline:2}"
+		elif [[ ! -z $topline && ${topline:0:2} == "#^" ]];then
+			parse_tags "${topline:2}" $temp
+		fi
+
+		if [[ ! -z $secondline && ${secondline:0:2} == "#^" ]];then
+			parse_tags "${secondline:2}" $temp
 		fi
 	done
+
+	set -A orderedTags $(printf "%s\n" "${TAGS[@]}" | sort -n | tr "\n" " ");
+	TAGS=("${orderedTags[@]}")
+	set_filtered_list
 }
 
 load_demos()
@@ -182,6 +244,38 @@ load_demos()
 			DEMODESC[$temp]="${topline:2}"
 		fi
 	done
+}
+
+set_filtered_list()
+{
+	#If FILTERSTRING is empty set FILTERMODS to entire MODULE array
+	if [ -z $FILTERSTRING ];then
+		FILTERMODS=("${MODULES[@]}")
+	else
+		u=0
+		while [ $u -lt ${#FILTERMODS[@]} ];do
+			unset FILTERMODS[$u]
+			let u=u+1
+		done
+
+		IFS=','; typeset -a filter_array=($FILTERSTRING); unset IFS;
+		typeset -a tmpArray=()
+		typeset -A dedupe=()
+        	for i in "${filter_array[@]}"
+        	do
+			IFS=','; typeset -a flt_mod_array=(${TAGMAP[$i]}); unset IFS;
+			for j in "${flt_mod_array[@]}"
+			do
+				if [ -z ${dedupe[$j]} ];then
+					tmpArray+=(${j})
+					dedupe[$j]="Added"
+				fi
+			done
+		done
+
+		FILTERMODS=("${tmpArray[@]}")
+	fi
+
 }
 
 
@@ -221,26 +315,53 @@ display() {
 	type=$3
 
 	if [ $TYPELOCK -lt 1 ];then
-		dstring="Switch to demo display"
+		dstring="d - Switch between builder and demo mode"
 	else
-		dstring="Bundling demo - disabled"
+		dstring="d - Bundling demo - disabled"
 	fi
 
-	#TODO - switch to printf not echo
+	#Messages
+	divider="==========================================================================================="
+	title="Couchbase Demo Framework"
+	#VERSION
+	modulesmsg="Total Modules : "
+	demosmsg="Total Demos : "
+	recordmodemsg="w - Toggle recording mode"
+	recordfilemsg="c - Set or change recording file"
+	pageback="b - Page back"
+	pageforward="p - Page forward"
+	setvarmsg="s - Set variable"
+	displayvarmsg="v - Display variables"
+	quitmsg="q - quit"
+	buildfiltermsg="f - Toggle filter criteria mode"
+	resetfiltermsg="r - Reset filter string"
+
 	clear	
-	echo "==========================================================================================="
-	echo "				Couchbase Demo Framework					 "
-	echo "												 "
-	echo "				Total Modules: ${#MODULES[@]}					 "
-	echo "				Total Demos  : ${#DEMOS[@]}					 "
-	echo "												 "
-	echo "			w - Toggle recording mode		[$writemode]			 "
-	echo "			c - Set or change recording file	[$recordfile]			 "
-	echo "												 "
-	echo "			< Page Back = 'b'              'p' = Page Forward >			 "
-	echo "		        s - Set variable	        v - Display Variables			 "
-	echo "			d - ${dstring}	q - quit				 "
-	echo "==========================================================================================="
+	printf "%s\n" $divider
+	printf "%35s%-24s\n" " " "$title"
+	printf "%35sVersion: %-s\n" " " "$VERSION"
+	printf "\n"
+
+	if [ $BUILDFILTER -eq 0 ];then
+		printf "%35s%-13s: ${#FILTERMODS[@]}\n" " " "$modulesmsg"
+		printf "%35s%-13s: ${#DEMOS[@]}\n" " " "$demosmsg"
+		printf "\n"
+		printf "%12s%-40s%15s[$writemode]\n" " " "$recordmodemsg" " " 
+		printf "%12s%-40s%15s[$recordfile]\n" " " "$recordfilemsg" " "
+		printf "\n"
+		printf "%12s%-40s%15s%-35s\n" " " "$pageback" " " "$pageforward"
+		printf "%12s%-40s%15s%-35s\n" " " "$setvarmsg" " " "$displayvarmsg"
+		printf "%12s%-40s%15s%-35s\n" " " "$dstring" " " "$quitmsg"
+		printf "%12s%-40s%15s[$FILTERSTRING]\n" " " "$buildfiltermsg" " " 
+	else
+		printf "%12s%-40s%15s%-35s\n" " " "$pageback" " " "$pageforward"
+		printf "%12s%-40s\n" " " "$resetfiltermsg"
+		printf "%12s%-40s\n" " " "$buildfiltermsg"
+		printf "\n"
+		printf "%12sCurrent Filter Criteria: $FILTERSTRING\n"
+	fi
+
+	printf "%s\n" $divider
 
 	j=0	
 	i=$startnum
@@ -249,11 +370,19 @@ display() {
 	echo ""
 	echo ""
 	if [ $type == "MOD" ];then
-		while [[ $i -lt $max && $i -lt ${#MODULES[@]} ]];do
-			printf "[%3s] - %-35s: %-100s\n" "$j" "${MODULES[$i]}" "${MODDESC[${MODULES[$i]}]}"
-			let j=j+1
-			let i=i+1
-		done
+		if [ $BUILDFILTER -eq 0 ];then
+			while [[ $i -lt $max && $i -lt ${#FILTERMODS[@]} ]];do
+				printf "[%3s] - %-35s: %-100s\n" "$j" "${FILTERMODS[$i]}" "${MODDESC[${FILTERMODS[$i]}]}"
+				let j=j+1
+				let i=i+1
+			done
+		else
+			while [[ $i -lt $max && $i -lt ${#TAGS[@]} ]];do
+				printf "[%3s] - %-50s\n" "$j" "${TAGS[$i]}" 
+				let j=j+1
+				let i=i+1
+			done
+		fi
 	elif [ $type == "DEMO" ];then
 		while [[ $i -lt $max && $i -lt ${#DEMOS[@]} ]];do
 			printf "[%3s] - %-20s: %-100s\n" "$j" "${DEMOS[$i]}" "${DEMODESC[${DEMOS[$i]}]}"
@@ -618,9 +747,11 @@ load_modules
 load_demos
 MODCNT=${#MODULES[@]}
 DEMOCNT=${#DEMOS[@]}
+TAGCNT=${#TAGS[@]}
 
 #MAIN LOOP
 while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
+	FILTERCNT=${#FILTERMODS[@]}
 	display $START $PAGESIZE $TYPE
 	echo ""
 	echo "Enter your selection: "
@@ -631,6 +762,8 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 	let MODNUM=START+NUM
 	let MODMAX=MODCNT-START
 	let DEMOMAX=DEMOCNT-START
+	let TAGMAX=TAGCNT-START
+	let FILTERMAX=FILTERCNT-START
 
 	if [[ -z $SELECTION || $SELECTION == "q" ]];then
 		break;
@@ -648,7 +781,7 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 	elif [ $SELECTION == "p" ];then
 		let START=START+PAGESIZE
 		if [ $TYPE == "MOD" ];then
-			if [ $START -ge ${#MODULES[@]} ];then
+			if [ $START -ge ${#FILTERMODS[@]} ];then
 				debug "Paged past max size, setting back to 0"
 				START=0
 			fi
@@ -668,8 +801,10 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 		continue
 	elif [ $SELECTION == "s" ];then
 		set_var
+		continue
 	elif [ $SELECTION == "v" ];then
 		dump_var
+		continue
 	elif [ $SELECTION == "w" ];then
 		#echo "Entered into switch mode"
 		if [ -z $writemode ];then
@@ -680,20 +815,59 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 		else
 			writemode=""
 		fi
+		continue
 	elif [ $SELECTION == "c" ];then
 		new_record_file
+		continue
+	elif [ $SELECTION == "r" ];then
+		if [[ $TYPE == "MOD" && $BUILDFILTER -eq 1 ]];then
+			FILTERSTRING=""
+			set_filtered_list
+		else
+			info "Resetting filtering criteria only available from filter screen 'f' in builder mode"
+			pause
+		fi
+		continue
+	elif [ $SELECTION == "f" ];then
+		if [ $TYPE == "MOD" ];then
+			if [ $BUILDFILTER -eq 0 ];then
+				BUILDFILTER=1
+			else
+				BUILDFILTER=0
+				set_filtered_list
+			fi
+		else
+			info "Filtering is only available in builder mode"
+			pause
+		fi
+		continue	
 	elif [[ $NUM -ge 0 ]];then
-		if [[ $TYPE == "MOD" && $NUM -lt $MODMAX && $NUM -lt $PAGESIZE ]];then
+		if [[ $TYPE == "MOD" && $NUM -lt $FILTERMAX && $NUM -lt $PAGESIZE && $BUILDFILTER -eq 0 ]];then
 			if [[ $NUM -eq 0 && $SELECTION != "0" ]];then
 				info "Unknown selection [$SELECTION], hit any key to continue..."
 				read pause
 				continue
 			fi
-			run_module ${MODULES[$MODNUM]}
+			run_module ${FILTERMODS[$MODNUM]}
 			pause
 			continue
 		fi
 		
+		if [[ $TYPE == "MOD" && $NUM -lt $TAGMAX && $NUM -lt $PAGESIZE && $BUILDFILTER -eq 1 ]];then
+			if [[ $NUM -eq 0 && $SELECTION != "0" ]];then
+				info "Unknown selection [$SELECTION], hit any key to continue..."
+				read pause
+				continue
+			fi
+		
+			if [ -z $FILTERSTRING ];then
+				FILTERSTRING="${TAGS[$MODNUM]}"
+			else
+				FILTERSTRING="$FILTERSTRING,${TAGS[$MODNUM]}"
+			fi
+			continue
+		fi
+
 		if [[ $TYPE == "DEMO" && $NUM -lt $DEMOMAX && $NUM -lt $PAGESIZE ]];then
 			if [[ $NUM -eq 0 && $SELECTION != "0" ]];then
 				info "Unknown selection [$SELECTION], hit any key to continue..."

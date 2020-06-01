@@ -1,4 +1,5 @@
 #@ Deploy ExternalDNS into specified namespace
+#^ kubernetes
 PROMPT~Enter NS to deploy external DNS into~NS~default
 PROMPT~Enter working directory~WORKDIR~./work
 TEMPLATE~externaldns-cr.template~{{WORKDIR}}~yaml~TFILE

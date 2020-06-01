@@ -1,4 +1,5 @@
 #@ Deploy a service to expose SGW as NodePort
+#^ SGW,Deploy Yaml
 PROMPT~Enter SGW port~PORT~4984
 PROMPT~Enter the namespace where sgw is deployed~NS~default
 TEMPLATE~sgw_svc.template~{{WORKDIR}}~yaml~SGWSVC

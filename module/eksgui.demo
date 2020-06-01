@@ -1,7 +1,0 @@
-#@ This is an example of calling a python application through the framework
-#======================= ./module/eksgui.demo ===============================
-# PROMPT~Enter the python file to run~PFILE~/Users/craigkovar/Desktop/Demos/Minishift/eks_tool/eks_tool.py
-SET~PFILE~/Users/craigkovar/Desktop/Demos/Minishift/eks_tool/eks_tool.py
-# PROMPT~Enter any additional args~ARGS~
-SET~ARGS~
-CODE~wrapper_python.ksh~{{PFILE}},{{ARGS}}

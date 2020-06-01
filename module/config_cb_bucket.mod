@@ -1,4 +1,5 @@
 #@ Configure and generate couchbase bucket yaml file
+#^ Couchbase Yaml Generation,Yaml Generation
 PROMPT~Enter working directory~WORKDIR~./work
 PROMPT~Enter namespace where cluster is located~NS~default
 PROMPT~Enter bucket name~BUCKET~default

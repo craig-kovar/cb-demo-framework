@@ -1,5 +1,5 @@
 #@ Deploy a appserver pod with CB installed but not in a cluster
-#======================= ./module/generic_template.mod ===============================
+#^ Couchbase,Deploy Yaml,Application Server
 PROMPT~Enter working directory~WORKDIR~./work
 PROMPT~Enter name of deployment~NAME~cbappserver
 PROMPT~Enter the image to deploy~IMAGE~couchbase:enterprise-6.5.1
