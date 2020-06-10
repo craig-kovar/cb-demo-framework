@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Module Details
-
+clear
+echo " "
 echo "Enter module name"
 read mod
 
