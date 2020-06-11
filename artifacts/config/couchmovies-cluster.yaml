@@ -1,0 +1,44 @@
+apiVersion: couchbase.com/v2
+kind: CouchbaseCluster
+metadata:
+  name: cb-example
+spec:
+  image: couchbase/server:6.5.0
+  paused: false
+  antiAffinity: false
+  softwareUpdateNotifications: false
+  cluster:
+    clusterName: cb-example
+    dataServiceMemoryQuota: 768Mi
+    indexServiceMemoryQuota: 256Mi
+    searchServiceMemoryQuota: 256Mi
+    eventingServiceMemoryQuota: 256Mi
+    analyticsServiceMemoryQuota: 1024Mi
+    indexStorageSetting: memory_optimized
+    autoFailoverTimeout: 30s
+    autoFailoverMaxCount: 3
+    autoFailoverOnDataDiskIssues: true
+    autoFailoverOnDataDiskIssuesTimePeriod: 120s
+    autoFailoverServerGroup: false
+  security:
+    adminSecret: cb-example-auth
+    rbac:
+      managed: false
+      selector:
+        matchLabels:
+          cluster: cb-example
+  servers:
+  - size: 3
+    name: all_services
+    services:
+    - data
+    - index
+    - query
+    - search
+  buckets:
+    managed: true
+    selector:
+      matchLabels:
+        cluster: cb-example
+  xdcr:
+    managed: false
