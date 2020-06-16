@@ -93,7 +93,7 @@ SET~CMNS~couchmovies
 SET~CMCLUSTER~cb-example
 # PROMPT~Enter the namespace where the CB Cluster is deployed~NS~default
 SET~NS~couchmovies
-#SET~CLUSTER~couchmovies
+SET~CLUSTER~couchmovies
 SET~PODS~1
 SET~RETRIES~10
 SET~SLEEP~30
@@ -101,12 +101,14 @@ CODE~get_pod_by_nameprefix.ksh~{{CMCLUSTER}},{{NS}}~CBPOD
 SET~CONNSTR~{{CBPOD}}.{{CMCLUSTER}}.{{NS}}.svc
 # PROMPT~Enter the work directory to use for intermediate files~WORKDIR~./work
 SET~WORKDIR~./work/couchmovies
-TEMPLATE~couchmovies.template~{{WORKDIR}}~yaml~COUCHMART
+TEMPLATE~couchmovies.template~{{WORKDIR}}~yaml~COUCHMOVIES
 KUBECTL~create -f {{WORKDIR}}/couchmovies.yaml -n {{CMNS}}
 #CODE~wait_till_cluster_ready.ksh~{{CLUSTER}},{{PODS}},{{CMNS}},{{RETRIES}},{{SLEEP}}
-#CODE~get_pod_by_nameprefix.ksh~{{CLUSTER}},{{CMNS}}~CMPOD
+CODE~get_pod_by_nameprefix.ksh~{{CLUSTER}},{{CMNS}}~CMPOD
 # PROMPT~Enter the local port to forward for couchmart~LPORT~8888
-#SET~LPORT~8000
+SET~LPORT~8000
+MESSAGE~Running port-forward {{CMPOD}} {{LPORT}}:8000 -n {{CMNS}} hit ctrl-c to exit...
 KUBECTL~port-forward {{CMPOD}} {{LPORT}}:8000 -n {{CMNS}} > /dev/null 2>&1 &
-#SET~LPORT~8080
+SET~LPORT~8080
+MESSAGE~Running port-forward {{CMPOD}} {{LPORT}}:8080 -n {{CMNS}} hit ctrl-c to exit...
 KUBECTL~port-forward {{CMPOD}} {{LPORT}}:8080 -n {{CMNS}} > /dev/null 2>&1 &
