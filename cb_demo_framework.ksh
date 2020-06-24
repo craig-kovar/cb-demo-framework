@@ -750,7 +750,7 @@ DEMOCNT=${#DEMOS[@]}
 TAGCNT=${#TAGS[@]}
 
 #MAIN LOOP
-while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
+while [[ $SELECTION != "q" ]];do
 	FILTERCNT=${#FILTERMODS[@]}
 	display $START $PAGESIZE $TYPE
 	echo ""
@@ -765,7 +765,11 @@ while [[ ! -z $SELECTION && $SELECTION != "q" ]];do
 	let TAGMAX=TAGCNT-START
 	let FILTERMAX=FILTERCNT-START
 
-	if [[ -z $SELECTION || $SELECTION == "q" ]];then
+	if [ -z $SELECTION ];then
+		echo "Selection can not be blank"
+		pause
+		continue
+	elif [[ $SELECTION == "q" ]];then
 		break;
 	elif [ $SELECTION == "d" ];then
 		if [ $TYPELOCK -lt 1 ];then
