@@ -835,8 +835,11 @@ while [[ $SELECTION != "q" ]];do
 	elif [ $SELECTION == "f" ];then
 		if [ $TYPE == "MOD" ];then
 			if [ $BUILDFILTER -eq 0 ];then
+				OLDSTART=$START
+				START=0
 				BUILDFILTER=1
 			else
+				START=$OLDSTART
 				BUILDFILTER=0
 				set_filtered_list
 			fi

@@ -21,6 +21,8 @@ cd $SCRIPTDIR
 # Execute the script
 if [ -f ${SCRIPTNAME} ];then
 	python $SCRIPTNAME $args
+else
+	echo "Unable to find script [$SCRIPTNAME]"
 fi
 
 # Return to original directory
