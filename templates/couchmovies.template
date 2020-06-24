@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: couchmovies
-        image: cbck/couchmovies:latest
+        image: waelemam/couchmovies:latest
         imagePullPolicy: Always
         env:
         - name: DEMO_DIR

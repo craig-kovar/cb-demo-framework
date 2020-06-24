@@ -57,7 +57,7 @@ SET~BUCKET~moviedata
 # PROMPT~Enter CB Cluster to create bucket in~CLUSTER~cb-example
 SET~CLUSTER~cb-example
 # PROMPT~Enter bucket memory quota in Mi~MEMORYQUOTA~256
-SET~MEMORYQUOTA~128
+SET~MEMORYQUOTA~512
 # PROMPT~Enter number of replicas~REPLICAS~1
 SET~REPLICAS~1
 # PROMPT~Enter eviction policy (valueOnly | fullEviction)~EVICTIONPOLICY~valueOnly
@@ -112,3 +112,4 @@ KUBECTL~port-forward {{CMPOD}} {{LPORT}}:8000 -n {{CMNS}} > /dev/null 2>&1 &
 SET~LPORT~8080
 MESSAGE~Running port-forward {{CMPOD}} {{LPORT}}:8080 -n {{CMNS}} hit ctrl-c to exit...
 KUBECTL~port-forward {{CMPOD}} {{LPORT}}:8080 -n {{CMNS}} > /dev/null 2>&1 &
+MESSAGE~Access Couchmovies app via http://localhost:8000/couchmovies.html hit ctrl-c to exit...
