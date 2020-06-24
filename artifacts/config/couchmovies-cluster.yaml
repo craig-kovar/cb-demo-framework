@@ -9,8 +9,8 @@ spec:
   softwareUpdateNotifications: false
   cluster:
     clusterName: cb-example
-    dataServiceMemoryQuota: 768Mi
-    indexServiceMemoryQuota: 256Mi
+    dataServiceMemoryQuota: 2048Mi
+    indexServiceMemoryQuota: 512Mi
     searchServiceMemoryQuota: 256Mi
     eventingServiceMemoryQuota: 256Mi
     analyticsServiceMemoryQuota: 1024Mi
