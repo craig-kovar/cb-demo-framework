@@ -314,6 +314,8 @@ display() {
 	offset=$2
 	type=$3
 
+	debug "Starting Number - $1 :: Offset - $2 :: Type - $3"
+
 	if [ $TYPELOCK -lt 1 ];then
 		dstring="d - Switch between builder and demo mode"
 	else
@@ -785,9 +787,16 @@ while [[ $SELECTION != "q" ]];do
 	elif [ $SELECTION == "p" ];then
 		let START=START+PAGESIZE
 		if [ $TYPE == "MOD" ];then
-			if [ $START -ge ${#FILTERMODS[@]} ];then
-				debug "Paged past max size, setting back to 0"
-				START=0
+			if [ $BUILDFILTER -eq 0 ]; then
+				if [ $START -ge ${#FILTERMODS[@]} ];then
+					debug "Paged past max size, setting back to 0"
+					START=0
+				fi
+			else
+				if [ $START -ge ${#TAGS[@]} ];then
+					debug "Paged past max size, setting back to 0"
+					START=0
+				fi
 			fi
 		elif [ $TYPE == "DEMO" ];then
 			if [ $START -ge ${#DEMOS[@]} ];then
@@ -835,11 +844,9 @@ while [[ $SELECTION != "q" ]];do
 	elif [ $SELECTION == "f" ];then
 		if [ $TYPE == "MOD" ];then
 			if [ $BUILDFILTER -eq 0 ];then
-				OLDSTART=$START
 				START=0
 				BUILDFILTER=1
 			else
-				START=$OLDSTART
 				BUILDFILTER=0
 				set_filtered_list
 			fi

@@ -1,0 +1,65 @@
+{
+	"Interface": ":4984",
+	"AdminInterface": ":4985",
+	"CORS": {
+        	"Origin":["*"],
+        	"LoginOrigin":["*"],
+        	"Headers":["Content-Type"],
+        	"MaxAge": 1728000
+    	},
+	"log": ["*"],
+	"Logging": {
+		"log_file_path": "/logs",
+		"console": {
+			"enabled": true,
+			"log_level": "info",
+			"log_keys": ["*", "HTTP"]
+		},
+		"error": {
+			"rotation": {}
+		},
+		"warn": {
+			"rotation": {}
+		},
+		"info": {
+			"rotation": {}
+		},
+		"debug": {
+			"rotation": {}
+		},
+		"default": {}
+	},
+	"Databases": {
+		"sandbox": {
+			"server": "couchbase://{{RETPOD}}",
+			"pool": "default",
+			"bucket": "sandbox",
+			"username": "Administrator",
+			"password": "password",
+      "allow_empty_password" : false,
+			"enable_shared_bucket_access": true,
+			"import_docs": false,
+			"sync": `function(doc,oldDoc) {channel(doc.channels);}`,
+			"users": {
+				"GUEST": {
+					"name": "",
+					"admin_channels": ["*"],
+					"all_channels": null,
+					"disabled": true
+				},
+				"admin": {
+					"name": "admin",
+					"admin_channels": ["*"],
+					"password": "password"
+				},
+				"sandbox": {
+					"name": "sandbox",
+					"admin_channels": ["sandbox"],
+					"password": "password"
+				}
+			},
+			"num_index_replicas": 0,
+			"use_views": false
+		}
+	}
+}

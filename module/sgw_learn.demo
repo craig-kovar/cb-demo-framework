@@ -1,0 +1,156 @@
+#@ A simple mobile application to demo Couchbase Mobile
+#======================= ./module/set_up_k8s.mod ===============================
+#======================= ./module/deploy_crd.mod ===============================
+KUBECTL~create -f ./artifacts/cbao/crd.yaml --save-config
+
+#======================= ./module/deploy_admission_controller.mod ===============================
+EXEC~bin/cbopcfg --no-operator | kubectl create -f -
+
+#======================= ./module/build_ns.mod ===============================
+# PROMPT~Enter the namespace~NS~couchbase
+SET~NS~couchbase
+# PROMPT~Enter the working directory to use~WORKDIR~.
+SET~WORKDIR~./work/couchbase
+CODE~check_make_dir.ksh~{{WORKDIR}}
+TEMPLATE~namespace.template~{{WORKDIR}}~yaml~NSTEMP
+KUBECTL~create -f {{NSTEMP}}
+
+#======================= ./module/deploy_administrator_defaults.mod ===============================
+# PROMPT~Enter the namespace to deploy into~NS~default
+SET~NS~couchbase
+KUBECTL~create -f ./artifacts/cbao/cb-example-auth.yaml -n {{NS}} --save-config
+
+#======================= ./module/deploy_cb_operator.mod ===============================
+# PROMPT~Enter namespace to deploy into~NS~default
+SET~NS~couchbase
+EXEC~bin/cbopcfg --no-admission --namespace {{NS}} | kubectl create -n {{NS}} -f -
+
+#======================= ./module/deploy_cb_cluster.mod ===============================
+# PROMPT~Enter working director~WORKDIR~./work
+SET~WORKDIR~./work/couchbase
+# PROMPT~Enter name of configuration yaml~CONFFILE~cb-cluster.yaml
+SET~CONFFILE~cb-cluster.yaml
+# PROMPT~Enter namespace to deploy into~NS~default
+SET~NS~couchbase
+KUBECTL~create -f {{WORKDIR}}/{{CONFFILE}} -n {{NS}} --save-config
+#======================= ./module/wait_for_pods.mod ===============================
+# PROMPT~Enter name prefix of cluster or pods to monitor (i.e. cb-example, couchmart, etc...)~CLUSTER~cb-example
+SET~CLUSTER~cb-example
+# PROMPT~Enter namespace of cluster~NS~default
+SET~NS~couchbase
+# PROMPT~Enter expected number of pods in cluster~PODS~3
+SET~PODS~3
+# PROMPT~Enter number of retries to check~RETRIES~10
+SET~RETRIES~10
+# PROMPT~Enter number of seconds to wait between retries~SLEEP~30
+SET~SLEEP~30
+CODE~wait_till_cluster_ready.ksh~{{CLUSTER}},{{PODS}},{{NS}},{{RETRIES}},{{SLEEP}}
+#======================= ./module/config_bucket_and_deploy.mod ===============================
+# PROMPT~Enter working directory~WORKDIR~./work
+SET~WORKDIR~./work/couchbase
+# PROMPT~Enter namespace where cluster is located~NS~default
+SET~NS~couchbase
+# PROMPT~Enter bucket name~BUCKET~default
+SET~BUCKET~sandbox
+# PROMPT~Enter CB Cluster to create bucket in~CLUSTER~cb-example
+SET~CLUSTER~cb-example
+# PROMPT~Enter bucket memory quota in Mi~MEMORYQUOTA~256
+SET~MEMORYQUOTA~256
+# PROMPT~Enter number of replicas~REPLICAS~1
+SET~REPLICAS~1
+# PROMPT~Enter eviction policy (valueOnly | fullEviction)~EVICTIONPOLICY~valueOnly
+SET~EVICTIONPOLICY~valueOnly
+# PROMPT~Enter conflict resolution (lww | seqno)~CONFLICT~seqno
+SET~CONFLICT~seqno
+# PROMPT~Enable flush (true | false)~FLUSH~false
+SET~FLUSH~true
+TEMPLATE~couchbase_bucket.template~{{WORKDIR}}~yaml~BUCKETTEMP
+KUBECTL~create -f {{BUCKETTEMP}} -n {{NS}} --save-config
+#======================= ./module/sleep.mod ===============================
+# PROMPT~Enter time to sleep in seconds~SLEEP~30
+SET~SLEEP~45
+MESSAGE~Sleeping for {{SLEEP}} seconds
+EXEC~sleep {{SLEEP}}
+
+#======================= ./module/get_pod_by_svc.mod ===============================
+SET~PFILE~./lib/get_pod_by_svc.py
+MESSAGE~Enter the following arguments:
+MESSAGE~-ns namespace [default]
+MESSAGE~-p prefix [cb-example]
+MESSAGE~-s service [kv, index, n1ql, fts, analytics, eventing]
+# PROMPT~Enter any additional args~ARGS~-ns default -p cb-example -s kv
+SET~ARGS~-ns couchbase -p cb-example -s kv
+CODE~wrapper_python.ksh~{{PFILE}},{{ARGS}}~RETPOD
+MESSAGE~Detected pod[{{RETPOD}}]
+#======================= ./module/generic_template.mod ===============================
+# PROMPT~Enter working directory~WORKDIR~./work
+SET~WORKDIR~./work/couchbase
+# PROMPT~Enter name of template file located in "templates" directory~TFILE~
+SET~TFILE~ckapp_sgw.template
+# PROMPT~Enter the file extenstion to use for generated file~EXTENSION~yaml
+SET~EXTENSION~json
+MESSAGE~The location of the generated file will be stored in the variable TFILE
+TEMPLATE~{{TFILE}}~{{WORKDIR}}~{{EXTENSION}}~TFILE
+
+#======================= ./module/deploy_sgw_config_secret.mod ===============================
+# PROMPT~Enter sgw config file to load~SGWFILE~
+SET~SGWFILE~./work/couchbase/ckapp_sgw.json
+# PROMPT~Enter name of secret for config file~SGWSECRET~
+SET~SGWSECRET~sgw-secret
+# PROMPT~Enter namespace to deploy SGW into~NS~
+SET~NS~couchbase
+KUBECTL~create secret generic {{SGWSECRET}} --from-file=config.json={{SGWFILE}} -n {{NS}}
+#======================= ./module/generic_template.mod ===============================
+# PROMPT~Enter working directory~WORKDIR~./work
+SET~WORKDIR~./work/couchbase
+# PROMPT~Enter name of template file located in "templates" directory~TFILE~
+SET~TFILE~sgw_deployment.template
+# PROMPT~Enter the file extenstion to use for generated file~EXTENSION~yaml
+SET~EXTENSION~yaml
+MESSAGE~The location of the generated file will be stored in the variable TFILE
+TEMPLATE~{{TFILE}}~{{WORKDIR}}~{{EXTENSION}}~TFILE
+#======================= ./module/deploy_pod.mod ===============================
+# PROMPT~Enter working directory~WORKDIR~./work
+SET~WORKDIR~./work/couchbase
+# PROMPT~Enter namespace where cluster is located~NS~default
+SET~NS~couchbase
+# PROMPT~Enter name of configuration file~FILE~couchbase_bucket.yaml
+SET~FILE~sgw_deployment.yaml
+KUBECTL~create -f {{WORKDIR}}/{{FILE}} -n {{NS}} --save-config
+
+#======================= ./module/wait_for_pods.mod ===============================
+# PROMPT~Enter name prefix of cluster or pods to monitor (i.e. cb-example, couchmart, etc...)~CLUSTER~cb-example
+SET~CLUSTER~sync-gateway
+# PROMPT~Enter namespace of cluster~NS~default
+SET~NS~couchbase
+# PROMPT~Enter expected number of pods in cluster~PODS~3
+SET~PODS~1
+# PROMPT~Enter number of retries to check~RETRIES~10
+SET~RETRIES~10
+# PROMPT~Enter number of seconds to wait between retries~SLEEP~30
+SET~SLEEP~30
+CODE~wait_till_cluster_ready.ksh~{{CLUSTER}},{{PODS}},{{NS}},{{RETRIES}},{{SLEEP}}
+#======================= ./module/port_forward_pod.mod ===============================
+# PROMPT~Enter name prefix of the pod to connect to~PODPFX~cb-example
+SET~PODPFX~cb-example
+# PROMPT~Enter namespace of your pod~NS~default
+SET~NS~couchbase
+CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
+# PROMPT~Enter local port to use~LPORT~8091
+SET~LPORT~8091
+# PROMPT~Enter remote port to use~RPORT~8091
+SET~RPORT~8091
+MESSAGE~Running port-forward {{POD}} {{LPORT}}:{{RPORT}} -n {{NS}} hit ctrl-c to exit...
+KUBECTL~port-forward {{POD}} {{LPORT}}:{{RPORT}} -n {{NS}} > /dev/null 2>&1 &
+#======================= ./module/port_forward_pod.mod ===============================
+# PROMPT~Enter name prefix of the pod to connect to~PODPFX~cb-example
+SET~PODPFX~sync-gateway
+# PROMPT~Enter namespace of your pod~NS~default
+SET~NS~couchbase
+CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
+# PROMPT~Enter local port to use~LPORT~8091
+SET~LPORT~4984
+# PROMPT~Enter remote port to use~RPORT~8091
+SET~RPORT~4984
+MESSAGE~Running port-forward {{POD}} {{LPORT}}:{{RPORT}} -n {{NS}} hit ctrl-c to exit...
+KUBECTL~port-forward {{POD}} {{LPORT}}:{{RPORT}} -n {{NS}} > /dev/null 2>&1 &
