@@ -38,7 +38,7 @@
 			"password": "password",
       "allow_empty_password" : false,
 			"enable_shared_bucket_access": true,
-			"import_docs": false,
+			"import_docs": true,
 			"sync": `function(doc,oldDoc) {channel(doc.channels);}`,
 			"users": {
 				"GUEST": {

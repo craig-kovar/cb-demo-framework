@@ -86,7 +86,7 @@ MESSAGE~Detected pod[{{RETPOD}}]
 # PROMPT~Enter working directory~WORKDIR~./work
 SET~WORKDIR~./work/couchbase
 # PROMPT~Enter name of template file located in "templates" directory~TFILE~
-SET~TFILE~ckapp_sgw.template
+SET~TFILE~sgw_learn.template
 # PROMPT~Enter the file extenstion to use for generated file~EXTENSION~yaml
 SET~EXTENSION~json
 MESSAGE~The location of the generated file will be stored in the variable TFILE
@@ -94,7 +94,7 @@ TEMPLATE~{{TFILE}}~{{WORKDIR}}~{{EXTENSION}}~TFILE
 
 #======================= ./module/deploy_sgw_config_secret.mod ===============================
 # PROMPT~Enter sgw config file to load~SGWFILE~
-SET~SGWFILE~./work/couchbase/ckapp_sgw.json
+SET~SGWFILE~{{TFILE}}
 # PROMPT~Enter name of secret for config file~SGWSECRET~
 SET~SGWSECRET~sgw-secret
 # PROMPT~Enter namespace to deploy SGW into~NS~
@@ -117,7 +117,6 @@ SET~NS~couchbase
 # PROMPT~Enter name of configuration file~FILE~couchbase_bucket.yaml
 SET~FILE~sgw_deployment.yaml
 KUBECTL~create -f {{WORKDIR}}/{{FILE}} -n {{NS}} --save-config
-
 #======================= ./module/wait_for_pods.mod ===============================
 # PROMPT~Enter name prefix of cluster or pods to monitor (i.e. cb-example, couchmart, etc...)~CLUSTER~cb-example
 SET~CLUSTER~sync-gateway
