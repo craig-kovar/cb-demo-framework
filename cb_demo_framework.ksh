@@ -24,6 +24,7 @@ typeset -a TAGS			#Numeric list of possible tags
 typeset -A TAGMAP		#Mapping of modules to tags
 typeset -a FILTERMODS		#Filtered list of modules to display when using filtering
 
+PACKAGE="demo"
 FILTERSTRING=""
 BUILDFILTER=0
 TYPE="DEMO"	       		#The display mode: MOD or DEMO
@@ -85,7 +86,8 @@ usage() {
 	echo ""
 	echo "$1 [-n|--nolog] [-d|--debug] [-l|-logfile <filename>] [-h|--help]"
 	echo "		[-p|--pagesize <size>] [-g|--git-refresh] [--list <git|mod|demo>]"
-	echo "		[-b|--bundle-demo <package name>]"
+	echo "		[-b|--bundle-demo <package name>] [-s|--set <varname>=<value>]"
+	echo "		[-m|--module <module name>]"
 	echo ""
 	echo "	-n | --nolog		=	Disables logging. Logging is enabled by default"
 	echo "	-d | --debug		=	Enables debug logging.  Disabled by default"
@@ -95,6 +97,8 @@ usage() {
 	echo "	-g | --git-refresh	=	Refresh the recorded git repositories"
 	echo "	--list git|mod|demo	=	List the specified resource"
 	echo "	-b | --bundle-demo	=	Deploy demo and bundle to sharable gzip file"
+	echo "	-s | --set		=	Set a variable on launch"
+	echo "	-m | --module		=	Launch a specific module or demo instead of display"
 	echo ""
 }
 
@@ -207,7 +211,7 @@ parse_tags()
 load_modules()
 {
 	debug "Loading modules"
-	for file in ./module/*.mod
+	for file in ./packages/${PACKAGE}/*.mod
 	do
 		temp=`echo $(basename $file)`
 		MODULES+=($temp)
@@ -233,7 +237,7 @@ load_modules()
 load_demos()
 {
 	debug "Loading demos"
-	for file in ./module/*.demo
+	for file in ./packages/${PACKAGE}/*.demo
 	do
 		temp=`echo $(basename $file)`
 		DEMOS+=($temp)
@@ -476,12 +480,12 @@ set_var()
 	
 	#record values
 	if [ ! -z $writemode ];then
-		echo "#==================== SET COMMAND =========================" >> ./module/$recordfile
+		echo "#==================== SET COMMAND =========================" >> ./packages/${PACKAGE}/$recordfile
 		final=`echo $varvalue | sed -e 's/\"/\\\\\"/g'`
 		final=`echo $final | sed -e "s/\'/\\\\\'/g"`
 		final=`echo $final | sed -e 's/\`/\\\\\`/g'`
 		echo $final
-		eval echo "SET~${varname}~${final}" >> ./module/$recordfile
+		eval echo "SET~${varname}~${final}" >> ./packages/${PACKAGE}/$recordfile
 	fi
 	echo "$varname set to $varvalue, hit any key to continue..."
 	read pause
@@ -510,11 +514,11 @@ new_record_file()
 		fileext=`echo ${recordfile##*.}`
 	done
 
-	if [ ! -f ./module/$recordfile ];then
+	if [ ! -f ./packages/${PACKAGE}/$recordfile ];then
 		echo "Enter a brief description for this recording: "
 		read desc
 
-		echo "#@ $desc" > ./module/$recordfile
+		echo "#@ $desc" > ./packages/${PACKAGE}/$recordfile
 	else
 		echo "Override existing file [y/n]: "	
 		read override
@@ -522,7 +526,7 @@ new_record_file()
 			echo "Enter a brief description for this recording: "
 			read desc
 
-			echo "#@ $desc" > ./module/$recordfile
+			echo "#@ $desc" > ./packages/${PACKAGE}/$recordfile
 		fi
 	fi
 
@@ -530,10 +534,10 @@ new_record_file()
 
 run_module()
 {
-	file="./module/${1}"
+	file="./packages/${PACKAGE}/${1}"
 	info "Running module $file"
 	if [ ! -z $writemode ];then
-		echo "#======================= $file ===============================" >> ./module/$recordfile
+		echo "#======================= $file ===============================" >> ./packages/${PACKAGE}/$recordfile
 	fi
 	while read line
 	do
@@ -571,11 +575,11 @@ run_module()
         			done
 				debug "[CODE] Final args: $args"
 			
-				exec_module_code "./lib/${inp_array[1]}" "$args" "${inp_array[3]}"
+				exec_module_code "./lib/${PACKAGE}/${inp_array[1]}" "$args" "${inp_array[3]}"
 				;;
 			"SOURCE")
 				debug "[SOURCE] Sourcing code ${inp_array[1]}"
-				. ./lib/${inp_array[1]}
+				. ./lib/${PACKAGE}/${inp_array[1]}
 				;;
 			"KUBECTL")
 				kcommand=`replace_var "${inp_array[1]}"`
@@ -652,13 +656,13 @@ run_module()
 		#record values
 		if [ ! -z $writemode ];then
 			if [ ${inp_array[0]} == "PROMPT" ];then
-				echo "# $line" >> ./module/$recordfile
+				echo "# $line" >> ./packages/${PACKAGE}/$recordfile
 				final=`echo ${RESPONSES[${inp_array[2]}]} | sed -e 's/\"/\\\\\"/g'`
 				final=`echo $final | sed -e "s/\'/\\\\\'/g"`
 				final=`echo $final | sed -e 's/\`/\\\\\`/g'`
-				eval echo "SET~${inp_array[2]}~$final" >> ./module/$recordfile
+				eval echo "SET~${inp_array[2]}~$final" >> ./packages/${PACKAGE}/$recordfile
 			else
-				echo $line >> ./module/$recordfile
+				echo $line >> ./packages/${PACKAGE}/$recordfile
 			fi
 		fi
 		
@@ -730,6 +734,21 @@ while [ "$1" != "" ]; do
 		--list)
 			echo "Listing ... "
 			pause
+			exit 0
+			;;
+                -s | --set)
+			shift
+			TMPVAR=$1
+			tmp_var_name=`echo $TMPVAR | cut -d'=' -f1`
+			tmp_var_value=`echo $TMPVAR | cut -d'=' -f2`
+			if [[ ! -z $tmp_var_name && ! -z $tmp_var_value ]];then
+				RESPONSES[$tmp_var_name]=$tmp_var_value
+			fi	
+			;;
+		-m | --module)
+			shift
+			tmp_module=$1
+			run_module $tmp_module	
 			exit 0
 			;;
         	*)
@@ -890,7 +909,7 @@ while [[ $SELECTION != "q" ]];do
 			fi
 			
 			if [ $TYPELOCK -ge 1 ];then
-				tar rf $TARFILE ./module/${DEMOS[$MODNUM]}
+				tar rf $TARFILE ./packages/${PACKAGE}/${DEMOS[$MODNUM]}
 			fi
 
 			run_module ${DEMOS[$MODNUM]}

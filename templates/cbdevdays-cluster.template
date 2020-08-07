@@ -1,0 +1,59 @@
+apiVersion: couchbase.com/v2
+kind: CouchbaseCluster
+metadata:
+  name: {{NS}}
+spec:
+  image: couchbase/server:6.5.0
+  paused: false
+  antiAffinity: false
+  softwareUpdateNotifications: false
+  cluster:
+    clusterName: {{NS}}
+    dataServiceMemoryQuota: 256Mi
+    indexServiceMemoryQuota: 256Mi
+    searchServiceMemoryQuota: 256Mi
+    eventingServiceMemoryQuota: 256Mi
+    analyticsServiceMemoryQuota: 1024Mi
+    indexStorageSetting: memory_optimized
+    autoFailoverTimeout: 30s
+    autoFailoverMaxCount: 3
+    autoFailoverOnDataDiskIssues: true
+    autoFailoverOnDataDiskIssuesTimePeriod: 120s
+    autoFailoverServerGroup: false
+  security:
+    adminSecret: cb-example-auth
+    rbac:
+      managed: false
+      selector:
+        matchLabels:
+          cluster: {{NS}}
+  networking:
+    exposeAdminConsole: false
+    adminConsoleServices:
+    - data
+    adminConsoleServiceType: LoadBalancer
+    exposedFeatures:
+    - admin
+    - client
+    exposedFeatureServiceType: LoadBalancer
+    tls:
+      static:
+        serverSecret: couchbase-server-tls
+        operatorSecret: couchbase-operator-tls
+    dns:
+      domain: se-couchbasedemos.com
+  servers:
+  - size: 3
+    name: all_services
+    services:
+    - data
+    - index
+    - query
+    - search
+  buckets:
+    managed: true
+    selector:
+      matchLabels:
+        cluster: {{NS}}
+  xdcr:
+    managed: false
