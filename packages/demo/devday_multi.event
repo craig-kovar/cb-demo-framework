@@ -1,0 +1,147 @@
+#@ This is a Group deployment with ExternalDNS for Dev Days
+#======================= ./packages/demo/set_up_k8s.mod ===============================
+#======================= ./packages/demo/deploy_crd.mod ===============================
+KUBECTL~create -f ./artifacts/cbao/crd.yaml --save-config
+
+#======================= ./packages/demo/deploy_admission_controller.mod ===============================
+EXEC~bin/cbopcfg --no-operator | kubectl create -f -
+
+#======================= ./packages/demo/build_ns.mod ===============================
+#SET~WORKDIR~./work/devdays
+CODE~check_make_dir.ksh~{{WORKDIR}}
+TEMPLATE~namespace.template~{{WORKDIR}}~yaml~NSTEMP
+KUBECTL~create -f {{NSTEMP}}
+
+#======================= ./packages/demo/deploy_administrator_defaults.mod ===============================
+KUBECTL~create -f ./artifacts/cbao/cb-example-auth.yaml -n {{NS}} --save-config
+
+#======================= ./packages/demo/deploy_cb_operator.mod ===============================
+EXEC~bin/cbopcfg --no-admission --namespace {{NS}} | kubectl create -n {{NS}} -f -
+
+#======================= ./packages/demo/deploy_externaldns.mod ===============================
+TEMPLATE~externaldns-cr.template~{{WORKDIR}}~yaml~TFILE
+KUBECTL~create -f {{WORKDIR}}/externaldns-cr.yaml -n {{NS}} --save-config
+TEMPLATE~externaldns-sa.template~{{WORKDIR}}~yaml~TFILE
+KUBECTL~create -f {{WORKDIR}}/externaldns-sa.yaml -n {{NS}} --save-config
+TEMPLATE~externaldns-crb.template~{{WORKDIR}}~yaml~TFILE
+KUBECTL~create -f {{WORKDIR}}/externaldns-crb.yaml -n {{NS}} --save-config
+TEMPLATE~externaldns-deployment.template~{{WORKDIR}}~yaml~TFILE
+KUBECTL~create -f {{WORKDIR}}/externaldns-deployment.yaml -n {{NS}} --save-config
+#======================= ./packages/demo/generate_tls.mod ===============================
+CODE~generate_tls_cert.ksh~{{WORKDIR}},{{CLUSTER}},{{NS}}
+#======================= ./packages/demo/deploy_cb_cluster.mod ===============================
+TEMPLATE~cbdevdays-cluster.template~{{WORKDIR}}~yaml~TFILE
+SET~CONFFILE~cbdevdays-cluster.yaml
+KUBECTL~create -f {{WORKDIR}}/{{CONFFILE}} -n {{NS}} --save-config
+#======================= ./packages/demo/wait_for_pods.mod ===============================
+SET~WAITNAME~{{CLUSTER}}-0
+SET~PODS~7
+SET~RETRIES~15
+SET~SLEEP~60
+CODE~wait_till_cluster_ready.ksh~{{WAITNAME}},{{PODS}},{{NS}},{{RETRIES}},{{SLEEP}}
+
+#-------
+# Bucket #1
+#-------
+#======================= ./packages/demo/config_bucket_and_deploy.mod ===============================
+SET~BUCKET~retailsample
+# PROMPT~Enter bucket memory quota in Mi~MEMORYQUOTA~256
+SET~MEMORYQUOTA~4096
+# PROMPT~Enter number of replicas~REPLICAS~1
+SET~REPLICAS~1
+# PROMPT~Enter eviction policy (valueOnly | fullEviction)~EVICTIONPOLICY~valueOnly
+SET~EVICTIONPOLICY~valueOnly
+# PROMPT~Enter conflict resolution (lww | seqno)~CONFLICT~seqno
+SET~CONFLICT~seqno
+# PROMPT~Enable flush (true | false)~FLUSH~false
+SET~FLUSH~false
+TEMPLATE~couchbase_bucket.template~{{WORKDIR}}~yaml~BUCKETTEMP
+KUBECTL~create -f {{BUCKETTEMP}} -n {{NS}} --save-config
+#======================= ./packages/demo/sleep.mod ===============================
+SET~SLEEP~45
+MESSAGE~Sleeping for {{SLEEP}} seconds
+EXEC~sleep {{SLEEP}}
+#======================= ./packages/demo/load_json_file.mod ===============================
+SET~FILEPATH~./artifacts/data/dev_days
+SET~FILE~customers.json
+SET~PODPFX~{{NS}}-0
+CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
+SET~USER~Administrator
+SET~PASS~password
+SET~KEY~'customer_%custId%'
+SET~THREADS~1
+SET~FORMAT~list
+KUBECTL~cp -n {{NS}} {{FILEPATH}}/{{FILE}} {{POD}}:/tmp
+KUBEEXEC~{{POD}} -n {{NS}} -- bash -c "cbimport json -c couchbase://localhost -u {{USER}} -p {{PASS}} -b {{BUCKET}} -f {{FORMAT}} -d file:///tmp/{{FILE}} -g "{{KEY}}" -t {{THREADS}}"
+#======================= ./packages/demo/load_json_file.mod ===============================
+SET~FILEPATH~./artifacts/data/dev_days
+SET~FILE~orders.json
+SET~PODPFX~{{NS}}-0
+CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
+SET~USER~Administrator
+SET~PASS~password
+SET~KEY~'order_%orderId%'
+SET~THREADS~1
+SET~FORMAT~list
+KUBECTL~cp -n {{NS}} {{FILEPATH}}/{{FILE}} {{POD}}:/tmp
+KUBEEXEC~{{POD}} -n {{NS}} -- bash -c "cbimport json -c couchbase://localhost -u {{USER}} -p {{PASS}} -b {{BUCKET}} -f {{FORMAT}} -d file:///tmp/{{FILE}} -g "{{KEY}}" -t {{THREADS}}"
+#======================= ./packages/demo/load_json_file.mod ===============================
+SET~FILEPATH~./artifacts/data/dev_days
+SET~FILE~users.json
+SET~PODPFX~{{NS}}-0
+CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
+SET~USER~Administrator
+SET~PASS~password
+SET~KEY~'user_%userId%'
+SET~THREADS~1
+SET~FORMAT~list
+KUBECTL~cp -n {{NS}} {{FILEPATH}}/{{FILE}} {{POD}}:/tmp
+KUBEEXEC~{{POD}} -n {{NS}} -- bash -c "cbimport json -c couchbase://localhost -u {{USER}} -p {{PASS}} -b {{BUCKET}} -f {{FORMAT}} -d file:///tmp/{{FILE}} -g "{{KEY}}" -t {{THREADS}}"
+#======================= ./packages/demo/load_json_file.mod ===============================
+SET~FILEPATH~./artifacts/data/dev_days
+SET~FILE~products.json
+SET~PODPFX~{{NS}}-0
+CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
+SET~USER~Administrator
+SET~PASS~password
+SET~KEY~'product_%prodId%'
+SET~THREADS~1
+SET~FORMAT~list
+KUBECTL~cp -n {{NS}} {{FILEPATH}}/{{FILE}} {{POD}}:/tmp
+KUBEEXEC~{{POD}} -n {{NS}} -- bash -c "cbimport json -c couchbase://localhost -u {{USER}} -p {{PASS}} -b {{BUCKET}} -f {{FORMAT}} -d file:///tmp/{{FILE}} -g "{{KEY}}" -t {{THREADS}}"
+
+#----------------------------
+# Configure Users for participants
+#----------------------------
+KUBECTL~create -f ./artifacts/config/user-password.yaml -n {{NS}} --save-config
+#======================= ./packages/demo/config_user_and_deploy.mod ===============================
+SET~USERNAME~svc-devdays
+SET~FULLNAME~Service Account DevDays
+SET~PASSWORDSECRET~user-password
+TEMPLATE~cb_user.template~{{WORKDIR}}~yaml~USERTEMP
+KUBECTL~create -f {{USERTEMP}} -n {{NS}} --save-config
+TEMPLATE~cbdevdays-group.template~{{WORKDIR}}~yaml~GROUPTEMP
+KUBECTL~create -f {{GROUPTEMP}} -n {{NS}} --save-config
+TEMPLATE~cbdevdays-binding.template~{{WORKDIR}}~yaml~BINDINGTEMP
+KUBECTL~create -f {{BINDINGTEMP}} -n {{NS}} --save-config
+
+#---------------------------
+#	Create FTS
+#--------------------------
+TEMPLATE~cbdevdays_fts.template~{{WORKDIR}}~json~TFILE
+SET~FTSDIR~{{WORKDIR}}
+SET~FTSFILE~cbdevdays_fts.json
+SET~INDEXNAME~basic-search
+SET~PFILE~./lib/demo/get_pod_by_svc.py
+SET~ARGS~-ns {{NS}} -p {{NS}}-0 -s fts -sn
+CODE~wrapper_python.ksh~{{PFILE}},{{ARGS}}~RETPOD
+KUBECTL~cp -n {{NS}} {{FTSDIR}}/{{FTSFILE}} {{RETPOD}}:/tmp
+KUBEEXEC~{{RETPOD}} -n {{NS}} -- bash -c "curl -u Administrator:password -XPUT http://localhost:8094/api/index/{{INDEXNAME}} -H "Content-type:application/json" -d @/tmp/{{FTSFILE}}
+TEMPLATE~cbdevdays_indexes.template~{{WORKDIR}}~txt~TFILE
+SET~PFILE~./lib/demo/get_pod_by_svc.py
+SET~ARGS~-ns {{NS}} -p {{NS}}-0 -s n1ql -sn
+CODE~wrapper_python.ksh~{{PFILE}},{{ARGS}}~RETPOD
+KUBECTL~cp -n {{NS}} {{FTSDIR}}/cbdevdays_indexes.txt {{RETPOD}}:/tmp
+KUBEEXEC~{{RETPOD}} -n {{NS}} -- bash -c "cbq -e couchbase://localhost -u {{USER}} -p {{PASS}} -f /tmp/cbdevdays_indexes.txt"
+
+

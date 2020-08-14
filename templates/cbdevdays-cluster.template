@@ -3,15 +3,15 @@ kind: CouchbaseCluster
 metadata:
   name: {{NS}}
 spec:
-  image: couchbase/server:6.5.0
+  image: couchbase/server:6.5.1
   paused: false
   antiAffinity: false
   softwareUpdateNotifications: false
   cluster:
     clusterName: {{NS}}
-    dataServiceMemoryQuota: 256Mi
-    indexServiceMemoryQuota: 256Mi
-    searchServiceMemoryQuota: 256Mi
+    dataServiceMemoryQuota: 4096Mi
+    indexServiceMemoryQuota: 4096Mi
+    searchServiceMemoryQuota: 4096Mi
     eventingServiceMemoryQuota: 256Mi
     analyticsServiceMemoryQuota: 1024Mi
     indexStorageSetting: memory_optimized
@@ -23,7 +23,7 @@ spec:
   security:
     adminSecret: cb-example-auth
     rbac:
-      managed: false
+      managed: true
       selector:
         matchLabels:
           cluster: {{NS}}
@@ -44,12 +44,18 @@ spec:
       domain: se-couchbasedemos.com
   servers:
   - size: 3
-    name: all_services
+    name: data
     services:
     - data
+  - size: 2
+    name: fts
+    services:
+    - search
+  - size: 2
+    name: indexquery
+    services:
     - index
     - query
-    - search
   buckets:
     managed: true
     selector:

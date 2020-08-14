@@ -1,0 +1,11 @@
+apiVersion: couchbase.com/v2
+kind: CouchbaseRoleBinding
+metadata:
+  name: {{BUCKET}}
+spec:
+  subjects:
+  - kind: CouchbaseUser
+    name: {{USERNAME}}
+  roleRef:
+    kind: CouchbaseGroup
+    name: {{BUCKET}}

@@ -1,0 +1,10 @@
+apiVersion: couchbase.com/v2
+kind: CouchbaseUser
+metadata:
+  name: {{USERNAME}}
+  labels:
+    cluster: {{CLUSTER}}
+spec:
+  fullName: {{FULLNAME}}
+  authDomain: local
+  authSecret: {{PASSWORDSECRET}}

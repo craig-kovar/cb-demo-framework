@@ -39,6 +39,7 @@ if __name__ == "__main__":
     parser.add_argument("-ns", "--namespace", help="Specify the namespace to use")
     parser.add_argument("-p", "--prefix", help="Specify the prefix to search for")
     parser.add_argument("-s", "--svc", help="Specify the service to search for")
+    parser.add_argument("-sn", "--shortname", help="Indicate that the shortname should be returned", action="store_true") 
     args = parser.parse_args()
 
     svc = "undefined"
@@ -55,5 +56,10 @@ if __name__ == "__main__":
     elif "eventing" in args.svc.lower():
         svc = "eventingAdminPort"
 
-    print(get_pod_by_svc(args.prefix, args.namespace, svc))
+    name=get_pod_by_svc(args.prefix, args.namespace, svc)
+
+    if args.shortname:
+        name=name.split(".")[0]
+    
+    print(name)
     

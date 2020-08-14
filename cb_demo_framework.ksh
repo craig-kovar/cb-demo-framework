@@ -161,7 +161,7 @@ message()
 {
 	orig=$1
 	message=`IFS=''; replace_var "$orig"; unset IFS`
-	debug "[MESSAGE] - Orig: $orig Fmt: $message"
+	#debug "[MESSAGE] - Orig: $orig Fmt: $message"
 	eval echo "$message"
 }
 
@@ -417,6 +417,43 @@ get_leading_space()
         echo $i
 }
 
+debug_array() 
+{
+	print ""
+	print "-------------------------"
+        for i in "${!RESPONSES[@]}"
+        do
+                print "key  : $i"
+                print "value: ${RESPONSES[$i]}"
+        done
+	print "------------------------"
+	print ""
+}
+
+escape_back_tick() 
+{
+        line=$1
+        start=`echo $line | awk 'END{print index($0,"\\\\\`{{")}'`
+        end=`echo $line | awk 'END{print index($0,"}}\\\\\`")}'`
+
+        while [ $end -gt 0 ];do
+                if [[ $start -ge 0 && $end -gt $start ]];then
+                        let startloc=$start+3
+                        let endloc=$end-1
+                        let length=$endloc-$startloc
+                        tmpname=`echo ${line:$startloc:$length}`
+                        tmpvalue=${RESPONSES[$tmpname]}
+                        RESPONSES["TEBT_${tmpname}"]="\`${tmpvalue}\`"
+                        line="${line:0:$start-1}{{TEBT_${tmpname}}}${line:end+3}"
+                fi
+
+                start=`echo $line | awk 'END{print index($0,"\\\\\`{{")}'`
+                end=`echo $line | awk 'END{print index($0,"}}\\\\\`")}'`
+        done
+
+        echo $line
+}
+
 parse_template()
 {
 	debug "[TEMPLATE] Parsing template $1"
@@ -449,6 +486,13 @@ parse_template()
 			final=`echo $fline | sed -e 's/\"/\\\\\"/g'`
                         final=`echo $final | sed -e "s/\'/\\\\\'/g"`
                         final=`echo $final | sed -e 's/\`/\\\\\`/g'`
+
+			#Check for `{{ and replace that with new variable named TEBT_<NAME> with value `<VALUE>`
+			escape_back_tick $final 2>&1 > /dev/null
+			final=`escape_back_tick $final`
+			final=`echo $final | sed -e 's/\;/\\\\\;/g'`
+
+			debug "[TEMPLATE] - pre evaluation line: $final"
 			valline=`get_var_val $final`
 		
 			printline=""

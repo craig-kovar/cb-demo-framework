@@ -1,0 +1,28 @@
+apiVersion: couchbase.com/v2
+kind: CouchbaseGroup
+metadata:
+  name: {{BUCKET}}
+  labels:
+    cluster: {{CLUSTER}}
+spec:
+  roles:
+  - name: bucket_admin
+    bucket: {{BUCKET}}
+  - name: data_reader
+    bucket: {{BUCKET}}
+  - name: data_writer
+    bucket: {{BUCKET}}
+  - name: query_select
+    bucket: {{BUCKET}}
+  - name: query_update
+    bucket: {{BUCKET}}
+  - name: query_insert
+    bucket: {{BUCKET}}
+  - name: query_delete
+    bucket: {{BUCKET}}
+  - name: query_manage_index
+    bucket: {{BUCKET}}
+  - name: fts_admin
+    bucket: {{BUCKET}}
+  - name: fts_searcher
+    bucket: {{BUCKET}}
