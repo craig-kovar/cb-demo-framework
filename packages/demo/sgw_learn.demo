@@ -25,17 +25,20 @@ KUBECTL~create -f ./artifacts/cbao/cb-example-auth.yaml -n {{NS}} --save-config
 SET~NS~couchbase
 EXEC~bin/cbopcfg --no-admission --namespace {{NS}} | kubectl create -n {{NS}} -f -
 
+#======================= Cluster Template ======================
+TEMPLATE~sgwlearn-cluster.template~{{WORKDIR}}~yaml~CLUSTERTEMP
+
 #======================= ./module/deploy_cb_cluster.mod ===============================
 # PROMPT~Enter working director~WORKDIR~./work
 SET~WORKDIR~./work/couchbase
 # PROMPT~Enter name of configuration yaml~CONFFILE~cb-cluster.yaml
-SET~CONFFILE~cb-cluster.yaml
+SET~CONFFILE~sgwlearn-cluster.yaml
 # PROMPT~Enter namespace to deploy into~NS~default
 SET~NS~couchbase
 KUBECTL~create -f {{WORKDIR}}/{{CONFFILE}} -n {{NS}} --save-config
 #======================= ./module/wait_for_pods.mod ===============================
 # PROMPT~Enter name prefix of cluster or pods to monitor (i.e. cb-example, couchmart, etc...)~CLUSTER~cb-example
-SET~CLUSTER~cb-example
+SET~CLUSTER~couchbase-0
 # PROMPT~Enter namespace of cluster~NS~default
 SET~NS~couchbase
 # PROMPT~Enter expected number of pods in cluster~PODS~3
@@ -53,7 +56,7 @@ SET~NS~couchbase
 # PROMPT~Enter bucket name~BUCKET~default
 SET~BUCKET~sandbox
 # PROMPT~Enter CB Cluster to create bucket in~CLUSTER~cb-example
-SET~CLUSTER~cb-example
+SET~CLUSTER~couchbase
 # PROMPT~Enter bucket memory quota in Mi~MEMORYQUOTA~256
 SET~MEMORYQUOTA~256
 # PROMPT~Enter number of replicas~REPLICAS~1
@@ -73,13 +76,13 @@ MESSAGE~Sleeping for {{SLEEP}} seconds
 EXEC~sleep {{SLEEP}}
 
 #======================= ./module/get_pod_by_svc.mod ===============================
-SET~PFILE~./lib/get_pod_by_svc.py
+SET~PFILE~./lib/demo/get_pod_by_svc.py
 MESSAGE~Enter the following arguments:
 MESSAGE~-ns namespace [default]
 MESSAGE~-p prefix [cb-example]
 MESSAGE~-s service [kv, index, n1ql, fts, analytics, eventing]
 # PROMPT~Enter any additional args~ARGS~-ns default -p cb-example -s kv
-SET~ARGS~-ns couchbase -p cb-example -s kv
+SET~ARGS~-ns couchbase -p couchbase-0 -s kv
 CODE~wrapper_python.ksh~{{PFILE}},{{ARGS}}~RETPOD
 MESSAGE~Detected pod[{{RETPOD}}]
 #======================= ./module/generic_template.mod ===============================
@@ -131,7 +134,7 @@ SET~SLEEP~30
 CODE~wait_till_cluster_ready.ksh~{{CLUSTER}},{{PODS}},{{NS}},{{RETRIES}},{{SLEEP}}
 #======================= ./module/port_forward_pod.mod ===============================
 # PROMPT~Enter name prefix of the pod to connect to~PODPFX~cb-example
-SET~PODPFX~cb-example
+SET~PODPFX~couchbase-0
 # PROMPT~Enter namespace of your pod~NS~default
 SET~NS~couchbase
 CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
