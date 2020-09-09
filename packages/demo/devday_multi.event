@@ -1,4 +1,6 @@
 #@ This is a Group deployment with ExternalDNS for Dev Days
+SET~CLUSTER~{{NS}}
+SET~WORKDIR~./{{NS}}
 #======================= ./packages/demo/set_up_k8s.mod ===============================
 #======================= ./packages/demo/deploy_crd.mod ===============================
 KUBECTL~create -f ./artifacts/cbao/crd.yaml --save-config
