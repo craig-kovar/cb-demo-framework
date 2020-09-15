@@ -9,7 +9,7 @@
 #
 #	@Author - Craig Kovar
 #----------------------------------------------------------------------------------#
-VERSION=0.7.0
+VERSION=0.7.1
 
 #----------------------------------------------------------------------------------#
 #	SCRIPT VARIABLES
@@ -432,26 +432,26 @@ debug_array()
 
 escape_back_tick() 
 {
-        line=$1
-        start=`echo $line | awk 'END{print index($0,"\\\\\`{{")}'`
-        end=`echo $line | awk 'END{print index($0,"}}\\\\\`")}'`
+        escapeline=$1
+        start=`echo $escapeline | awk 'END{print index($0,"\\\\\`{{")}'`
+        end=`echo $escapeline | awk 'END{print index($0,"}}\\\\\`")}'`
 
         while [ $end -gt 0 ];do
                 if [[ $start -ge 0 && $end -gt $start ]];then
                         let startloc=$start+3
                         let endloc=$end-1
                         let length=$endloc-$startloc
-                        tmpname=`echo ${line:$startloc:$length}`
+                        tmpname=`echo ${escapeline:$startloc:$length}`
                         tmpvalue=${RESPONSES[$tmpname]}
                         RESPONSES["TEBT_${tmpname}"]="\`${tmpvalue}\`"
-                        line="${line:0:$start-1}{{TEBT_${tmpname}}}${line:end+3}"
+                        escapeline="${escapeline:0:$start-1}{{TEBT_${tmpname}}}${escapeline:end+3}"
                 fi
 
-                start=`echo $line | awk 'END{print index($0,"\\\\\`{{")}'`
-                end=`echo $line | awk 'END{print index($0,"}}\\\\\`")}'`
+                start=`echo $escapeline | awk 'END{print index($0,"\\\\\`{{")}'`
+                end=`echo $escapeline | awk 'END{print index($0,"}}\\\\\`")}'`
         done
 
-        echo $line
+        echo $escapeline
 }
 
 parse_template()
@@ -586,6 +586,7 @@ run_module()
 	while read line
 	do
 		debug "[RUN_MODULE] Line : $line"
+		RECORDLINE=$line
 		CHECKLINE=`echo $line | awk '{$1=$1};1'`
 		FIRSTCHAR=${CHECKLINE:0:1}
 		if [[ ! -z $FIRSTCHAR && $FIRSTCHAR == "#" ]];then
@@ -706,6 +707,7 @@ run_module()
 				final=`echo $final | sed -e 's/\`/\\\\\`/g'`
 				eval echo "SET~${inp_array[2]}~$final" >> ./packages/${PACKAGE}/$recordfile
 			else
+				debug "[RECORDING] Line = $line"
 				echo $line >> ./packages/${PACKAGE}/$recordfile
 			fi
 		fi
