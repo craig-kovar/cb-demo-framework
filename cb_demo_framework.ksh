@@ -9,7 +9,7 @@
 #
 #	@Author - Craig Kovar
 #----------------------------------------------------------------------------------#
-VERSION=0.7.1
+VERSION=0.7.3
 
 #----------------------------------------------------------------------------------#
 #	SCRIPT VARIABLES
@@ -74,7 +74,7 @@ pause() {
 # Evaluate a variable to corresponding RESPONSES entry and returns that value
 #-----------------------
 get_var_val() {
-	temp=`replace_var "${1}"`
+	temp=`replace_var "${1}" ${2} ${3}`
 	final=`eval echo "$temp"`
 	echo $final
 }
@@ -169,13 +169,16 @@ replace_var()
 {
 	orig=$1
 	ssq=$2  #Skip escaping single quotes
+        sbt=$3  #Skip escaping backtick
 	final=`echo $orig | sed -e 's/{{/${RESPONSES[/g'`
 	final=`echo $final | sed -e 's/}}/]}/g'`
 
 	if [[ -z $ssq || "$ssq" != "true" ]]; then
 		#final=`echo $final | sed -e 's/\"/\\\\\"/g'`
 		final=`echo $final | sed -e "s/\'/\\\\\'/g"`
-		#final=`echo $final | sed -e 's/\`/\\\\\`/g'`
+		if [[ -z $sbt || "$sbt" != "true" ]];then
+			final=`echo $final | sed -e 's/\`/\\\\\`/g'`
+		fi
 	fi
 	
 	final=`echo $final | sed -e 's/"${/\"${/g'`
@@ -477,6 +480,7 @@ parse_template()
 	IFS=''	
 	while read fline
 	do
+		debug "[TEMPLATE] -------------------------"
 		debug "[TEMPLATE] raw_line: $fline"
 		spacecnt=`get_leading_space $fline`
 		valline=`echo "$fline"`
@@ -493,7 +497,7 @@ parse_template()
 			final=`echo $final | sed -e 's/\;/\\\\\;/g'`
 
 			debug "[TEMPLATE] - pre evaluation line: $final"
-			valline=`get_var_val $final`
+			valline=`get_var_val $final "false" "true"`
 		
 			printline=""
 			i=0
@@ -507,6 +511,7 @@ parse_template()
 		printline="${printline}${valline}"
 
 		debug "[TEMPLATE] - Adding line: $printline"
+		debug "[TEMPLATE] -------------------------"
 		echo "$printline" >> ${workdir}/${name}.${suffix}
 	done < ./templates/$template
 	unset IFS
