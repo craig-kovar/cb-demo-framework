@@ -9,7 +9,7 @@
 #
 #	@Author - Craig Kovar
 #----------------------------------------------------------------------------------#
-VERSION=0.7.3
+VERSION=0.8.0
 
 #----------------------------------------------------------------------------------#
 #	SCRIPT VARIABLES
@@ -609,8 +609,13 @@ run_module()
 				message "${inp_array[1]}"
 				;;
 			"SET")
-				tmpvalue=`replace_var "${inp_array[2]}"`
-				RESPONSES[${inp_array[1]}]=`eval echo "$tmpvalue"`
+				cnt=`echo "${inp_array[2]}" | grep -c "{{"`
+				if [ $cnt -ge 1 ];then
+					tmpvalue=`replace_var "${inp_array[2]}"`
+					RESPONSES[${inp_array[1]}]=`eval echo "$tmpvalue"`
+				else
+					RESPONSES[${inp_array[1]}]="${inp_array[2]}"
+				fi
 				;;
 			"CODE")
 				IFS=','; typeset -a arg_array=(${inp_array[2]}); unset IFS;
