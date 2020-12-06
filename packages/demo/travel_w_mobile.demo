@@ -1,4 +1,4 @@
-#@ This demo uses the travel sample application and sample bucket
+#@ This demo uses the travel sample application with SGW deployed
 #======================= ./packages/demo/set_up_k8s.mod ===============================
 #======================= ./packages/demo/deploy_crd.mod ===============================
 KUBECTL~create -f ./artifacts/cbao/crd.yaml --save-config
@@ -164,6 +164,79 @@ CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
 SET~LPORT~8080
 # PROMPT~Enter remote port to use~RPORT~8091
 SET~RPORT~8080
+MESSAGE~Running port-forward {{POD}} {{LPORT}}:{{RPORT}} -n {{NS}} hit ctrl-c to exit...
+KUBECTL~port-forward {{POD}} {{LPORT}}:{{RPORT}} -n {{NS}} > /dev/null 2>&1 &
+
+#=======================  Add SGW =================================================
+#======================= ./module/get_pod_by_svc.mod ===============================
+SET~PFILE~./lib/demo/get_pod_by_svc.py
+MESSAGE~Enter the following arguments:
+MESSAGE~-ns namespace [default]
+MESSAGE~-p prefix [cb-example]
+MESSAGE~-s service [kv, index, n1ql, fts, analytics, eventing]
+# PROMPT~Enter any additional args~ARGS~-ns default -p cb-example -s kv
+SET~ARGS~-ns couchbase -p cb-example-0 -s kv
+CODE~wrapper_python.ksh~{{PFILE}},{{ARGS}}~RETPOD
+MESSAGE~Detected pod[{{RETPOD}}]
+#======================= ./module/generic_template.mod ===============================
+# PROMPT~Enter working directory~WORKDIR~./work
+SET~WORKDIR~./work/travel
+# PROMPT~Enter name of template file located in "templates" directory~TFILE~
+SET~TFILE~sgw-config-travelsample.template
+# PROMPT~Enter the file extenstion to use for generated file~EXTENSION~yaml
+SET~EXTENSION~json
+MESSAGE~The location of the generated file will be stored in the variable TFILE
+TEMPLATE~{{TFILE}}~{{WORKDIR}}~{{EXTENSION}}~TFILE
+
+#======================= ./module/deploy_sgw_config_secret.mod ===============================
+# PROMPT~Enter sgw config file to load~SGWFILE~
+SET~SGWFILE~{{TFILE}}
+# PROMPT~Enter name of secret for config file~SGWSECRET~
+SET~SGWSECRET~sgw-secret
+# PROMPT~Enter namespace to deploy SGW into~NS~
+SET~NS~couchbase
+KUBECTL~create secret generic {{SGWSECRET}} --from-file=config.json={{SGWFILE}} -n {{NS}}
+
+#======================= ./module/generic_template.mod ===============================
+# PROMPT~Enter working directory~WORKDIR~./work
+SET~WORKDIR~./work/travel
+# PROMPT~Enter name of template file located in "templates" directory~TFILE~
+SET~TFILE~sgw_deployment.template
+# PROMPT~Enter the file extenstion to use for generated file~EXTENSION~yaml
+SET~EXTENSION~yaml
+MESSAGE~The location of the generated file will be stored in the variable TFILE
+TEMPLATE~{{TFILE}}~{{WORKDIR}}~{{EXTENSION}}~TFILE
+#======================= ./module/deploy_pod.mod ===============================
+# PROMPT~Enter working directory~WORKDIR~./work
+SET~WORKDIR~./work/travel
+# PROMPT~Enter namespace where cluster is located~NS~default
+SET~NS~couchbase
+# PROMPT~Enter name of configuration file~FILE~couchbase_bucket.yaml
+SET~FILE~sgw_deployment.yaml
+KUBECTL~create -f {{WORKDIR}}/{{FILE}} -n {{NS}} --save-config
+#======================= ./module/wait_for_pods.mod ===============================
+# PROMPT~Enter name prefix of cluster or pods to monitor (i.e. cb-example, couchmart, etc...)~CLUSTER~cb-example
+SET~CLUSTER~sync-gateway
+# PROMPT~Enter namespace of cluster~NS~default
+SET~NS~couchbase
+# PROMPT~Enter expected number of pods in cluster~PODS~3
+SET~PODS~1
+# PROMPT~Enter number of retries to check~RETRIES~10
+SET~RETRIES~10
+# PROMPT~Enter number of seconds to wait between retries~SLEEP~30
+SET~SLEEP~30
+CODE~wait_till_cluster_ready.ksh~{{CLUSTER}},{{PODS}},{{NS}},{{RETRIES}},{{SLEEP}}
+
+#======================= ./module/port_forward_pod.mod ===============================
+# PROMPT~Enter name prefix of the pod to connect to~PODPFX~cb-example
+SET~PODPFX~sync-gateway
+# PROMPT~Enter namespace of your pod~NS~default
+SET~NS~couchbase
+CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
+# PROMPT~Enter local port to use~LPORT~8091
+SET~LPORT~4984
+# PROMPT~Enter remote port to use~RPORT~8091
+SET~RPORT~4984
 MESSAGE~Running port-forward {{POD}} {{LPORT}}:{{RPORT}} -n {{NS}} hit ctrl-c to exit...
 KUBECTL~port-forward {{POD}} {{LPORT}}:{{RPORT}} -n {{NS}} > /dev/null 2>&1 &
 

@@ -1,0 +1,114 @@
+#@ This demo uses the travel sample application and connects to Couchbase Cloud
+#======================= ./packages/demo/set_up_k8s.mod ===============================
+#======================= ./packages/demo/deploy_crd.mod ===============================
+KUBECTL~create -f ./artifacts/cbao/crd.yaml --save-config
+
+#======================= ./packages/demo/deploy_admission_controller.mod ===============================
+EXEC~bin/cbopcfg --no-operator | kubectl create -f -
+
+#======================= ./packages/demo/build_ns.mod ===============================
+# PROMPT~Enter the namespace~NS~couchbase
+SET~NS~couchbase
+# PROMPT~Enter the working directory to use~WORKDIR~.
+SET~WORKDIR~./work/travel
+CODE~check_make_dir.ksh~{{WORKDIR}}
+TEMPLATE~namespace.template~{{WORKDIR}}~yaml~NSTEMP
+KUBECTL~create -f {{NSTEMP}}
+
+#==================== SET COMMAND =========================
+SET~NAME~travelsample
+#==================== SET COMMAND =========================
+SET~IMAGE~cbck/try-cb-python:latest
+#======================= ./packages/demo/generic_template.mod ===============================
+# PROMPT~Enter working directory~WORKDIR~./work
+SET~WORKDIR~./work/travel
+# PROMPT~Enter name of template file located in "templates" directory~TFILE~
+SET~TFILE~generic-deployment.template
+# PROMPT~Enter the file extenstion to use for generated file~EXTENSION~yaml
+SET~EXTENSION~yaml
+MESSAGE~The location of the generated file will be stored in the variable TFILE
+TEMPLATE~{{TFILE}}~{{WORKDIR}}~{{EXTENSION}}~TFILE
+
+#======================= ./packages/demo/deploy_pod.mod ===============================
+# PROMPT~Enter working directory~WORKDIR~./work
+SET~WORKDIR~./work/travel
+# PROMPT~Enter namespace where cluster is located~NS~default
+SET~NS~couchbase
+# PROMPT~Enter name of configuration file~FILE~couchbase_bucket.yaml
+SET~FILE~generic-deployment.yaml
+KUBECTL~create -f {{WORKDIR}}/{{FILE}} -n {{NS}} --save-config
+#======================= ./packages/demo/wait_for_pods.mod ===============================
+# PROMPT~Enter name prefix of cluster or pods to monitor (i.e. cb-example, couchmart, etc...)~CLUSTER~cb-example
+SET~CLUSTER~travelsample
+# PROMPT~Enter namespace of cluster~NS~default
+SET~NS~couchbase
+# PROMPT~Enter expected number of pods in cluster~PODS~3
+SET~PODS~1
+# PROMPT~Enter number of retries to check~RETRIES~10
+SET~RETRIES~10
+# PROMPT~Enter number of seconds to wait between retries~SLEEP~30
+SET~SLEEP~30
+CODE~wait_till_cluster_ready.ksh~{{CLUSTER}},{{PODS}},{{NS}},{{RETRIES}},{{SLEEP}}
+#======================= Manually prompt for information ================================
+PROMPT~Enter Couchbase Cloud connection string~CONNSTR~
+PROMPT~Enter Couchbase Cloud Database User~USER~svcdemo
+PROMPT~Enter Couchbase Cloud Database User Password~PASSWORD~Password123!
+
+#======================= ./packages/demo/exec_pod_cmd.mod ===============================
+# PROMPT~Enter name prefix of the pod to execute from~PODPFX~cb-example-0
+SET~PODPFX~travelsample
+# PROMPT~Enter namespace of your cluster~NS~default
+SET~NS~couchbase
+CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
+# PROMPT~Enter command~CCMD~
+SET~CCMD~sed -i.bkup '27s#.*#CONNSTR = \\\"couchbase:\/\/{{CONNSTR}}?ssl=no_verify\\\"#' /try-cb-python/travel.py
+MESSAGE~Executing {{CCMD}} on {{POD}}
+KUBEEXEC~{{POD}} -n {{NS}} -- bash -c "{{CCMD}}"
+
+SET~CCMD~sed -i.bkup '28s#.*#USER = \\\"{{USER}}\\\"#' /try-cb-python/travel.py
+MESSAGE~Executing {{CCMD}} on {{POD}}
+KUBEEXEC~{{POD}} -n {{NS}} -- bash -c "{{CCMD}}"
+
+SET~CCMD~sed -i.bkup '29s#.*#PASSWORD =  \\\"{{PASSWORD}}\\\"#' /try-cb-python/travel.py
+MESSAGE~Executing {{CCMD}} on {{POD}}
+KUBEEXEC~{{POD}} -n {{NS}} -- bash -c "{{CCMD}}"
+
+#======================== Manually check the IP and display for user ====================
+MESSAGE~""
+MESSAGE~""
+MESSAGE~"================================================="
+MESSAGE~"	Detecting IP address to add to Allowlist  "
+MESSAGE~"================================================="
+MESSAGE~""
+EXEC~curl -s -XGET https://api.ipify.org
+MESSAGE~""
+MESSAGE~""
+MESSAGE~"================================================="
+MESSAGE~"	Finished detecting IP address		  "
+MESSAGE~"================================================="
+MESSAGE~""
+MESSAGE~""
+PROMPT~Hit any key when IP address is available~IPREADY
+
+#======================= ./packages/demo/exec_pod_cmd.mod ===============================
+# PROMPT~Enter name prefix of the pod to execute from~PODPFX~cb-example-0
+SET~PODPFX~travelsample
+# PROMPT~Enter namespace of your cluster~NS~default
+SET~NS~couchbase
+CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
+# PROMPT~Enter command~CCMD~
+SET~CCMD~nohup python /try-cb-python/travel.py 2>&1 > /try-cb-python/travel.log &
+MESSAGE~Executing {{CCMD}} on {{POD}}
+KUBEEXEC~{{POD}} -n {{NS}} -- bash -c "{{CCMD}}"
+#======================= ./packages/demo/port_forward_pod.mod ===============================
+# PROMPT~Enter name prefix of the pod to connect to~PODPFX~cb-example
+SET~PODPFX~travelsample
+# PROMPT~Enter namespace of your pod~NS~default
+SET~NS~couchbase
+CODE~get_pod_by_nameprefix.ksh~{{PODPFX}},{{NS}}~POD
+# PROMPT~Enter local port to use~LPORT~8091
+SET~LPORT~8080
+# PROMPT~Enter remote port to use~RPORT~8091
+SET~RPORT~8080
+MESSAGE~Running port-forward {{POD}} {{LPORT}}:{{RPORT}} -n {{NS}} hit ctrl-c to exit...
+KUBECTL~port-forward {{POD}} {{LPORT}}:{{RPORT}} -n {{NS}} > /dev/null 2>&1 &
